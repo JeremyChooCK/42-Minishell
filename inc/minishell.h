@@ -24,7 +24,20 @@
 # include <errno.h>
 # include <termios.h>
 # include <sys/stat.h>
+# include <limits.h>
 # include <readline/readline.h>
 # include <readline/history.h>
+
+
+typedef struct s_list{
+	char	*prompt;
+	char	*path;
+	char	**commandsarr;
+	char	*execcmds[3];
+}	t_list;
+
+size_t	ft_strlen(const char *str);
+char	**ft_split(char const *s, char c);
+char	*ft_strjoin( char const *s1, char const *s2);
 
 #endif

@@ -1,9 +1,10 @@
 NAME = minishell
 CC = cc
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -g
+LDFLAGS = -lreadline
 INCLUDE = inc
 
-SRC = main.c \
+SRC = main.c ft_split.c ft_strjoin.c \
 
 SRC := $(addprefix src/,$(SRC))
 
@@ -15,7 +16,7 @@ all: $(NAME)
 	$(CC) $(CFLAGS) -I$(INCLUDE) -c $< -o $@
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -I$(INCLUDE) -o $(NAME)
+	$(CC) $(OBJS) $(LDFLAGS) -I$(INCLUDE) -o $(NAME)
 
 clean:
 	rm -f $(OBJS)
