@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 22:06:38 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/22 22:55:19 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -179,6 +179,20 @@ void	ft_add_to_history(t_list *data, char *command)
 	}
 }
 
+void	ft_display_history(t_list *data)
+{
+	t_history	*current;
+	int			count;
+
+	current = data->history;
+	count = 0;
+	while (current != NULL)
+	{
+		printf("%d %s\n", ++count, current->command);
+		current = current->next;
+	}
+}
+
 void	ft_display_prompt(t_list *data, char **envp)
 {
 	char	buf[1000];
@@ -203,6 +217,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 			}
 			if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 				checkdir(data->commandsarr[1], cwd);
+			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+				ft_display_history(data);
 			else
 			{
 				data->path = getpath(data);

@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 21:37:01 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/22 22:52:18 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -48,6 +48,7 @@ void    checkdir(char *s, char *cwd);
 int		checkempty(char *s);
 void    executecommands(t_list *data, char **envp);
 void	ft_add_to_history(t_list *data, char *command);
+void	ft_display_history(t_list *data);
 void    ft_display_prompt(t_list *data, char **envp);
 void    getcmd(t_list *data);
 char    *getpath(t_list *data);
