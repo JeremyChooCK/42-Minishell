@@ -6,13 +6,12 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/09/07 12:12:05 by jechoo           ###   ########.fr       */
+/*   Updated: 2023/11/22 20:07:20 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+#include "minishell.h"
 
-#include "../inc/minishell.h"
-
-char	*ft_strjoin( char const *s1, char const *s2)
+char	*ft_strjoin(char const *s1, char const *s2)
 {
 	size_t	s2len;
 	size_t	s1len;
