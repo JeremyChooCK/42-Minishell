@@ -6,11 +6,10 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 12:25:32 by jechoo            #+#    #+#             */
-/*   Updated: 2023/09/09 11:14:57 by jechoo           ###   ########.fr       */
+/*   Updated: 2023/11/22 19:58:01 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "../inc/minishell.h"
+#include "minishell.h"
 
 static int	count_word(char *str, char charset)
 {
@@ -84,7 +83,7 @@ char	**ft_split(char const *s, char c)
 // #include<string.h>
 // int	main()strarr
 // {
-// 	char **result = ft_split("   lorem g elit. 
+// 	char **result = ft_split("   lorem g elit.
 // Sed non risus. Suspendisse   ", ' ');
 // 	for(size_t i = 0; i < 12; i++)
 // 		printf("%s\n", result[i]);

@@ -3,8 +3,13 @@ CC = cc
 CFLAGS = -Wall -Wextra -Werror -g
 LDFLAGS = -lreadline
 INCLUDE = inc
+LIBFT = ft_split.c \
+	ft_strcmp.c \
+	ft_strjoin.c \
+	ft_strlen.c \
 
-SRC = main.c ft_split.c ft_strjoin.c \
+SRC = $(LIBFT) \
+	main.c
 
 SRC := $(addprefix src/,$(SRC))
 
