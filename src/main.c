@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 21:01:35 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/22 22:06:38 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -102,20 +102,20 @@ char	*getpath(t_list *data)
 		temp = ft_strjoin(splitpath[i], "/");
 		joinedpath = ft_strjoin(temp, data->commandsarr[0]);
 		free(temp);
-        if (access(joinedpath, X_OK) == 0)
+		if (access(joinedpath, X_OK) == 0)
 		{
-            while (splitpath[i])
-                free(splitpath[i++]);
-            free(splitpath);
-            return (joinedpath);
-        }
-        free(joinedpath);
-    }
+			while (splitpath[i])
+				free(splitpath[i++]);
+			free(splitpath);
+			return (joinedpath);
+		}
+		free(joinedpath);
+	}
 	j = 0;
-    while (splitpath[j])
-        free(splitpath[j++]);
-    free(splitpath);
-    return (NULL);
+	while (splitpath[j])
+		free(splitpath[j++]);
+	free(splitpath);
+	return (NULL);
 }
 
 void	getcmd(t_list *data)
@@ -143,16 +143,40 @@ void	executecommands(t_list *data, char **envp)
 		wait(NULL);
 }
 
-int checkempty(char *s)
+int	checkempty(char *s)
 {
 	size_t	i;
 
 	i = 0;
 	while (s[i] == ' ' || s[i] == '\t')
 		i++;
-	if (i == ft_strlen(s))
-		return (1);
-	return (0);
+	return (i == ft_strlen(s));
+}
+
+void	ft_add_to_history(t_list *data, char *command)
+{
+	t_history	*new_history;
+	t_history	*last;
+
+	new_history = malloc(sizeof(t_history));
+	if (!new_history)
+	{
+		perror("Failed to allocate memory for history");
+		return ;
+	}
+	new_history->command = ft_strdup(command);
+	new_history->next = NULL;
+	new_history->prev = NULL;
+	if (data->history == NULL)
+		data->history = new_history;
+	else
+	{
+		last = data->history;
+		while (last->next != NULL)
+			last = last->next;
+		last->next = new_history;
+		new_history->prev = last;
+	}
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
@@ -164,10 +188,12 @@ void	ft_display_prompt(t_list *data, char **envp)
 	while (1)
 	{
 		data->prompt = readline("minishell> ");
-        if (!data->prompt)
-            break ;
+		if (!data->prompt)
+			break ;
 		if (checkempty(data->prompt) == 0)
 		{
+			ft_add_to_history(data, data->prompt);
+			add_history(data->prompt);
 			getcmd(data);
 			cwd = getcwd(buf, sizeof(buf));
 			if (cwd == NULL)
@@ -182,10 +208,12 @@ void	ft_display_prompt(t_list *data, char **envp)
 				data->path = getpath(data);
 				if (data->prompt && *data->prompt)
 					add_history(data->prompt);
-				if (data->path) {
+				if (data->path)
+				{
 					executecommands(data, envp);
 					free(data->path);
-				} else
+				}
+				else
 					printf("Command not found: %s\n", data->commandsarr[0]);
 				i = 0;
 				while (data->commandsarr[i])

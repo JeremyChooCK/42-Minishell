@@ -6,7 +6,7 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/11/22 20:07:20 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/22 22:29:12 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -22,9 +22,9 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	result = malloc((sizeof(char) * (s1len + s2len)) + 1);
 	if (result == NULL)
 		return (NULL);
-	while (*s1)
+	while (s1 && *s1)
 		*result++ = *s1++;
-	while (*s2)
+	while (s2 && *s2)
 		*result++ = *s2++;
 	*result = '\0';
 	return (result - s1len - s2len);
