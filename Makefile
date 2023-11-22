@@ -7,6 +7,7 @@ LIBFT = ft_split.c \
 	ft_strcmp.c \
 	ft_strjoin.c \
 	ft_strlen.c \
+	ft_strdup.c \
 
 SRC = $(LIBFT) \
 	main.c

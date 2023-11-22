@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 20:09:39 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/22 21:37:01 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -28,12 +28,30 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 
+typedef struct s_history
+{
+	char				*command;
+	struct s_history	*next;
+	struct s_history	*prev;
+}	t_history;
+
 typedef struct s_list
 {
-	char	*prompt;
-	char	*path;
-	char	**commandsarr;
-	char	*execcmds[3];
+	char		*prompt;
+	char		*path;
+	char		**commandsarr;
+	char		*execcmds[3];
+	t_history	*history;
 }	t_list;
+
+void    checkdir(char *s, char *cwd);
+int		checkempty(char *s);
+void    executecommands(t_list *data, char **envp);
+void	ft_add_to_history(t_list *data, char *command);
+void    ft_display_prompt(t_list *data, char **envp);
+void    getcmd(t_list *data);
+char    *getpath(t_list *data);
+char    *remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
+char    *removedotslash(char *s);
 
 #endif
