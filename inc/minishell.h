@@ -42,7 +42,7 @@ typedef struct s_list
 	char		*prompt;
 	char		*path;
 	char		**commandsarr;
-	char		*execcmds[3];
+	char		**execcmds;
 	t_history	*history;
 }	t_list;
 

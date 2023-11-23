@@ -204,19 +204,15 @@ bash output = ()
 mini exit code = Command not found: exit
 bash exit code = 0
 [0;33mTest  39: ❌[38;5;244m cd $PWD 
-[0mmini exit code = Command not found: exit
+[0mmini exit code = 1
 bash exit code = 0
 mini error = ( No such file or directory)
 bash error = ()
-[0;33mTest  40: ❌[38;5;244m cd $PWD hi 
-[0mmini exit code = Command not found: exit
-bash exit code = 1
-mini error = ( No such file or directory)
+[0;33mTest  40: ✅⚠️ [38;5;244m cd $PWD hi 
+[0mmini error = ( No such file or directory)
 bash error = ( too many arguments)
-[0;33mTest  41: ❌[38;5;244m cd 123123 
-[0mmini exit code = Command not found: exit
-bash exit code = 1
-[0;33mTest  42: ❌[38;5;244m exit 123 
+[0;33mTest  41: ✅[38;5;244m cd 123123 
+[0m[0;33mTest  42: ❌[38;5;244m exit 123 
 [0mmini output = (Command not found: exit)
 bash output = ()
 mini exit code = Command not found: exit
@@ -961,6 +957,8 @@ mini output = (hi)
 bash output = ()
 mini exit code = Command not found: exit
 bash exit code = 0
+mini error = ()
+bash error = ( Broken pipe)
 [0;33mTest 124: ❌[38;5;244m echo hi | echo bye >>./outfiles/outfile01 >>./outfiles/outfile02 
 [0mOnly in ./bash_outfiles: outfile01
 Only in ./bash_outfiles: outfile02
@@ -1119,5 +1117,5 @@ mini exit code = Command not found: exit
 bash exit code = 127
 mini error = ()
 bash error = ( command not found)
-[0;35m[1m/146
+[0;35m[1m2/146
 [0m😭 😭 😭

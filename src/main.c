@@ -50,7 +50,7 @@ char	*getpath(t_list *data)
 	splitpath = ft_split(path, ':');
 	if (!splitpath)
 		return (NULL);
-	while (splitpath[i++] != NULL)
+	while (splitpath[i] != NULL)
 	{
 		temp = ft_strjoin(splitpath[i], "/");
 		joinedpath = ft_strjoin(temp, data->commandsarr[0]);
@@ -63,6 +63,7 @@ char	*getpath(t_list *data)
 			return (joinedpath);
 		}
 		free(joinedpath);
+		i++;
 	}
 	j = 0;
 	while (splitpath[j])
@@ -84,11 +85,21 @@ void	getcmd(t_list *data)
 void	executecommands(t_list *data, char **envp)
 {
 	int	id;
+	int	i;
 
+	i = 0;
+	while (data->commandsarr[i])
+		i++;
+	data->execcmds = malloc(sizeof(char *) * i + 1);
 	data->execcmds[0] = data->path;
 	data->path = NULL;
-	data->execcmds[1] = data->commandsarr[1];
-	data->execcmds[2] = NULL;
+	i = 1;
+	while (data->commandsarr[i])
+	{
+		data->execcmds[i] = data->commandsarr[i];
+		i++;
+	}
+	data->commandsarr[i] = NULL;
 	id = fork();
 	if (id == 0)
 		execve(data->execcmds[0], data->execcmds, envp);
@@ -157,7 +168,7 @@ int	checkdir(char *path)
         if (path == NULL)
 		{
             printf("cd: HOME not set\n");
-            return 1;
+            exit(1);
         }
     }
 	else if (ft_strcmp(path, "-") == 0)
@@ -167,7 +178,7 @@ int	checkdir(char *path)
         if (path == NULL)
 		{
             printf("cd: OLDPWD not set\n");
-            return (1);
+            exit(1);
         }
         printf("%s\n", path); // Print the new directory
     }
@@ -175,15 +186,27 @@ int	checkdir(char *path)
     if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
         perror("cd: getcwd failed");
-        return (1);
+        exit(1);
     }
     // Change to the new directory
     if (chdir(path) != 0)
 	{
         perror("cd");
-        return (1);
+        exit(1);
     }
     return (0);
+}
+
+void	ft_display_echo(t_list *data)
+{
+	int	i;
+
+	i = 1;
+	while (data->commandsarr[i])
+	{
+		printf("%s", data->commandsarr[i]);
+		i++;
+	}
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
@@ -205,6 +228,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 				checkdir(data->commandsarr[1]);
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 				ft_display_history(data);
+			else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+				ft_display_echo(data);
 			else
 			{
 				data->path = getpath(data);
