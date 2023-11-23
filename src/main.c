@@ -195,54 +195,42 @@ void	ft_display_history(t_list *data)
 
 int	checkdir(char *path)
 {
-	    char cwd[PATH_MAX];
+	char cwd[PATH_MAX];
 
-    // If no path is given, default to the HOME directory
-    if (path == NULL || strcmp(path, "~") == 0) {
+    // If no path given, default to the HOME directory
+    if (path == NULL || ft_strcmp(path, "~") == 0)
+	{
         path = getenv("HOME");
-        if (path == NULL) {
+        if (path == NULL)
+		{
             printf("cd: HOME not set\n");
-            return -1;
+            return 1;
         }
-    } else if (strcmp(path, "-") == 0) {
+    }
+	else if (ft_strcmp(path, "-") == 0)
+	{
         // Implement the 'cd -' functionality to go to the previous directory
         path = getenv("OLDPWD");
-        if (path == NULL) {
+        if (path == NULL)
+		{
             printf("cd: OLDPWD not set\n");
-            return -1;
+            return (1);
         }
         printf("%s\n", path); // Print the new directory
     }
-
     // Save the current directory before changing it
-    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+	{
         perror("cd: getcwd failed");
-        return -1;
+        return (1);
     }
-
     // Change to the new directory
-    if (chdir(path) != 0) {
+    if (chdir(path) != 0)
+	{
         perror("cd");
-        return -1;
+        return (1);
     }
-
-    // Update OLDPWD with the old current directory
-    if (setenv("OLDPWD", cwd, 1) != 0) {
-        perror("cd: setenv OLDPWD failed");
-        return -1;
-    }
-
-    // Update PWD with the new current directory
-    if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        perror("cd: getcwd failed");
-        return -1;
-    }
-    if (setenv("PWD", cwd, 1) != 0) {
-        perror("cd: setenv PWD failed");
-        return -1;
-    }
-
-    return 0;
+    return (0);
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
