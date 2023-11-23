@@ -13,73 +13,73 @@
 
 // TODO fix segmentation error when invalid command is provided
 // TODO cd recursively does not work need to fix it
-char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd)
-{
-	char	*result;
-	char	*temp;
-	int		i;
-	int		j;
+// char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd)
+// {
+// 	char	*result;
+// 	char	*temp;
+// 	int		i;
+// 	int		j;
 
-	i = 3;
-	j = 0;
-	result = malloc(ft_strlen(s) - 1);
-	while (s[i])
-		result[j++] = s[i++];
-	result[j] = '\0';
-	free(s);
-	i = ft_strlen(cwd);
-	while (cwd[i] != '/')
-		i--;
-	temp = malloc(i + 1);
-	j = -1;
-	while (++j < i)
-		temp[j] = cwd[j];
-	temp[j] = '\0';
-	cwd = temp;
-	return (result);
-}
+// 	i = 3;
+// 	j = 0;
+// 	result = malloc(ft_strlen(s) - 1);
+// 	while (s[i])
+// 		result[j++] = s[i++];
+// 	result[j] = '\0';
+// 	free(s);
+// 	i = ft_strlen(cwd);
+// 	while (cwd[i] != '/')
+// 		i--;
+// 	temp = malloc(i + 1);
+// 	j = -1;
+// 	while (++j < i)
+// 		temp[j] = cwd[j];
+// 	temp[j] = '\0';
+// 	cwd = temp;
+// 	return (result);
+// }
 
-char	*removedotslash(char *s)
-{
-	char	*result;
-	int		i;
-	int		j;
+// char	*removedotslash(char *s)
+// {
+// 	char	*result;
+// 	int		i;
+// 	int		j;
 
-	i = 2;
-	j = 0;
-	result = malloc(ft_strlen(s) - 1);
-	while (s[i])
-		result[j++] = s[i++];
-	result[j] = '\0';
-	free(s);
-	return (result);
-}
+// 	i = 2;
+// 	j = 0;
+// 	result = malloc(ft_strlen(s) - 1);
+// 	while (s[i])
+// 		result[j++] = s[i++];
+// 	result[j] = '\0';
+// 	free(s);
+// 	return (result);
+// }
 
-void	checkdir(char *s, char *cwd)
-{
-	char	*changedpath;
-	char	*temp;
+// void	checkdir(char *s, char *cwd)
+// {
+// 	char	*changedpath;
+// 	char	*temp;
 
-	if (s[0] == '.')
-	{
-		if (s[1] == '.')
-		{
-			if (s[2] == '/')
-				s = remove_dotdot_slash_and_goback_one_dir(s, cwd);
-		}
-		if (s[1] == '/')
-			s = removedotslash(s);
-	}
-	temp = ft_strjoin(cwd, "/");
-	changedpath = ft_strjoin(temp, s);
-	free(temp);
-	if (chdir(changedpath) != 0)
-	{
-		perror("chdir failed");
-		return ;
-	}
-	free(changedpath);
-}
+// 	if (s[0] == '.')
+// 	{
+// 		if (s[1] == '.')
+// 		{
+// 			if (s[2] == '/')
+// 				s = remove_dotdot_slash_and_goback_one_dir(s, cwd);
+// 		}
+// 		if (s[1] == '/')
+// 			s = removedotslash(s);
+// 	}
+// 	temp = ft_strjoin(cwd, "/");
+// 	changedpath = ft_strjoin(temp, s);
+// 	free(temp);
+// 	if (chdir(changedpath) != 0)
+// 	{
+// 		perror("chdir failed");
+// 		return ;
+// 	}
+// 	free(changedpath);
+// }
 
 char	*getpath(t_list *data)
 {
@@ -193,10 +193,61 @@ void	ft_display_history(t_list *data)
 	}
 }
 
+int	checkdir(char *path)
+{
+	    char cwd[PATH_MAX];
+
+    // If no path is given, default to the HOME directory
+    if (path == NULL || strcmp(path, "~") == 0) {
+        path = getenv("HOME");
+        if (path == NULL) {
+            printf("cd: HOME not set\n");
+            return -1;
+        }
+    } else if (strcmp(path, "-") == 0) {
+        // Implement the 'cd -' functionality to go to the previous directory
+        path = getenv("OLDPWD");
+        if (path == NULL) {
+            printf("cd: OLDPWD not set\n");
+            return -1;
+        }
+        printf("%s\n", path); // Print the new directory
+    }
+
+    // Save the current directory before changing it
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        perror("cd: getcwd failed");
+        return -1;
+    }
+
+    // Change to the new directory
+    if (chdir(path) != 0) {
+        perror("cd");
+        return -1;
+    }
+
+    // Update OLDPWD with the old current directory
+    if (setenv("OLDPWD", cwd, 1) != 0) {
+        perror("cd: setenv OLDPWD failed");
+        return -1;
+    }
+
+    // Update PWD with the new current directory
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        perror("cd: getcwd failed");
+        return -1;
+    }
+    if (setenv("PWD", cwd, 1) != 0) {
+        perror("cd: setenv PWD failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 void	ft_display_prompt(t_list *data, char **envp)
 {
-	char	buf[1000];
-	char	*cwd;
+	// char	buf[1000];
 	int		i;
 
 	while (1)
@@ -209,14 +260,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 			ft_add_to_history(data, data->prompt);
 			add_history(data->prompt);
 			getcmd(data);
-			cwd = getcwd(buf, sizeof(buf));
-			if (cwd == NULL)
-			{
-				perror("getcwd failed");
-				return ;
-			}
 			if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-				checkdir(data->commandsarr[1], cwd);
+				checkdir(data->commandsarr[1]);
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 				ft_display_history(data);
 			else

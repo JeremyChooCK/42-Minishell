@@ -27,6 +27,7 @@
 # include <limits.h>
 # include <readline/readline.h>
 # include <readline/history.h>
+#include <linux/limits.h>
 
 typedef struct s_history
 {
@@ -44,7 +45,7 @@ typedef struct s_list
 	t_history	*history;
 }	t_list;
 
-void    checkdir(char *s, char *cwd);
+int		checkdir(char *path);
 int		checkempty(char *s);
 void    executecommands(t_list *data, char **envp);
 void	ft_add_to_history(t_list *data, char *command);
