@@ -27,7 +27,8 @@
 # include <limits.h>
 # include <readline/readline.h>
 # include <readline/history.h>
-#include <linux/limits.h>
+// this wont work on my mac, please dont add this thanks!
+// #include <linux/limits.h>
 
 typedef struct s_history
 {
