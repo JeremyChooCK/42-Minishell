@@ -212,9 +212,9 @@ void	ft_display_echo(t_list *data)
 	printf("\n");
 }
 
+// TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
-	// char	buf[1000];
 	int		i;
 
 	while (1)
@@ -227,7 +227,13 @@ void	ft_display_prompt(t_list *data, char **envp)
 			ft_add_to_history(data, data->prompt);
 			add_history(data->prompt);
 			getcmd(data);
-			if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+			if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+            {
+				free(data->path);
+				free(data->prompt);
+				break ;
+            }
+			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 				checkdir(data->commandsarr[1]);
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 				ft_display_history(data);
