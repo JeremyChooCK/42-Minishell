@@ -159,7 +159,7 @@ void	ft_display_history(t_list *data)
 
 int	checkdir(char *path)
 {
-	char cwd[PATH_MAX];
+	char cwd[4096];
 
     // If no path given, default to the HOME directory
     if (path == NULL || ft_strcmp(path, "~") == 0)
@@ -205,8 +205,11 @@ void	ft_display_echo(t_list *data)
 	while (data->commandsarr[i])
 	{
 		printf("%s", data->commandsarr[i]);
+		if (data->commandsarr[i + 1] != NULL)
+			printf(" ");
 		i++;
 	}
+	printf("\n");
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
