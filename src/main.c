@@ -6,80 +6,33 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 22:55:19 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/23 20:53:46 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-// TODO fix segmentation error when invalid command is provided
-// TODO cd recursively does not work need to fix it
-// char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd)
-// {
-// 	char	*result;
-// 	char	*temp;
-// 	int		i;
-// 	int		j;
+void sigint_handler(int sig)
+{
+	(void)sig;
+    write(1, "\nminishell> ", 12);
+}
 
-// 	i = 3;
-// 	j = 0;
-// 	result = malloc(ft_strlen(s) - 1);
-// 	while (s[i])
-// 		result[j++] = s[i++];
-// 	result[j] = '\0';
-// 	free(s);
-// 	i = ft_strlen(cwd);
-// 	while (cwd[i] != '/')
-// 		i--;
-// 	temp = malloc(i + 1);
-// 	j = -1;
-// 	while (++j < i)
-// 		temp[j] = cwd[j];
-// 	temp[j] = '\0';
-// 	cwd = temp;
-// 	return (result);
-// }
+void	sigquit_handler(int sig)
+{
+    (void)sig;
+}
 
-// char	*removedotslash(char *s)
-// {
-// 	char	*result;
-// 	int		i;
-// 	int		j;
+void	setup_signal_handlers()
+{
+    struct sigaction sa;
 
-// 	i = 2;
-// 	j = 0;
-// 	result = malloc(ft_strlen(s) - 1);
-// 	while (s[i])
-// 		result[j++] = s[i++];
-// 	result[j] = '\0';
-// 	free(s);
-// 	return (result);
-// }
-
-// void	checkdir(char *s, char *cwd)
-// {
-// 	char	*changedpath;
-// 	char	*temp;
-
-// 	if (s[0] == '.')
-// 	{
-// 		if (s[1] == '.')
-// 		{
-// 			if (s[2] == '/')
-// 				s = remove_dotdot_slash_and_goback_one_dir(s, cwd);
-// 		}
-// 		if (s[1] == '/')
-// 			s = removedotslash(s);
-// 	}
-// 	temp = ft_strjoin(cwd, "/");
-// 	changedpath = ft_strjoin(temp, s);
-// 	free(temp);
-// 	if (chdir(changedpath) != 0)
-// 	{
-// 		perror("chdir failed");
-// 		return ;
-// 	}
-// 	free(changedpath);
-// }
+    sa.sa_handler = sigint_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sa.sa_handler = sigquit_handler;
+    sigaction(SIGQUIT, &sa, NULL);
+}
 
 char	*getpath(t_list *data)
 {
@@ -280,6 +233,7 @@ int	main(int argc, char **argv, char **envp)
 	t_list	*data;
 
 	(void)argv;
+	setup_signal_handlers();
 	if (argc > 1)
 	{
 		printf("No arguments are required for minishell\n");
@@ -291,6 +245,7 @@ int	main(int argc, char **argv, char **envp)
 		printf("Memory allocation failed\n");
 		return (1);
 	}
+	printf("# Still testing signals, fast double press ctrl + c to quit.\n");
 	ft_display_prompt(data, envp);
 	free(data);
 	return (0);
