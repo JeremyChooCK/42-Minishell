@@ -77,7 +77,7 @@ void	getcmd(t_list *data)
 	data->commandsarr = ft_split(data->prompt, ' ');
 	if (data->commandsarr == NULL)
 	{
-		fprintf(stderr, "Error splitting command input.\n");
+		printf("Error splitting command input.\n");
 		return ;
 	}
 }
@@ -99,7 +99,7 @@ void	executecommands(t_list *data, char **envp)
 		data->execcmds[i] = data->commandsarr[i];
 		i++;
 	}
-	data->commandsarr[i] = NULL;
+	data->execcmds[i] = NULL;
 	id = fork();
 	if (id == 0)
 		execve(data->execcmds[0], data->execcmds, envp);
@@ -197,21 +197,6 @@ int	checkdir(char *path)
     return (0);
 }
 
-void	ft_display_echo(t_list *data)
-{
-	int	i;
-
-	i = 1;
-	while (data->commandsarr[i])
-	{
-		printf("%s", data->commandsarr[i]);
-		if (data->commandsarr[i + 1] != NULL)
-			printf(" ");
-		i++;
-	}
-	printf("\n");
-}
-
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -237,8 +222,6 @@ void	ft_display_prompt(t_list *data, char **envp)
 				checkdir(data->commandsarr[1]);
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 				ft_display_history(data);
-			else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-				ft_display_echo(data);
 			else
 			{
 				data->path = getpath(data);
