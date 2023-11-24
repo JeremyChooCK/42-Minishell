@@ -8,6 +8,9 @@ LIBFT = ft_split.c \
 	ft_strjoin.c \
 	ft_strlen.c \
 	ft_strdup.c \
+	ft_strstr.c \
+	ft_strncpy.c \
+	ft_strcpy.c \
 
 SRC = $(LIBFT) \
 	main.c

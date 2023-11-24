@@ -11,27 +11,27 @@
 /* ************************************************************************** */
 #include "minishell.h"
 
-void sigint_handler(int sig)
+void	sigint_handler(int sig)
 {
 	(void)sig;
-    write(1, "\nminishell> ", 12);
+	write(1, "\nminishell> ", 12);
 }
 
 void	sigquit_handler(int sig)
 {
-    (void)sig;
+	(void)sig;
 }
 
-void	setup_signal_handlers()
+void	setup_signal_handlers(void)
 {
-    struct sigaction sa;
+	struct sigaction	sa;
 
-    sa.sa_handler = sigint_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
-    sa.sa_handler = sigquit_handler;
-    sigaction(SIGQUIT, &sa, NULL);
+	sa.sa_handler = sigint_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	sa.sa_handler = sigquit_handler;
+	sigaction(SIGQUIT, &sa, NULL);
 }
 
 char	*getpath(t_list *data)
@@ -72,20 +72,86 @@ char	*getpath(t_list *data)
 	return (NULL);
 }
 
+char	*str_replace(char *orig, char *rep, char *with)
+{
+	char	*result;
+    char	*ins;
+    char	*tmp;
+    int		len_rep;
+    int		len_with;
+    int		len_front;
+    int		count;
+
+    if (!orig || !rep)
+        return (NULL);
+    len_rep = ft_strlen(rep);
+    if (len_rep == 0)
+        return (NULL);
+    if (!with)
+        with = "";
+    len_with = ft_strlen(with);
+    ins = orig;
+	count = 0;
+	tmp = ft_strstr(ins, rep);
+	while (tmp)
+	{
+		++count;
+        ins = tmp + len_rep;
+		tmp = ft_strstr(ins, rep);
+    }
+    tmp = result = malloc(ft_strlen(orig) + (len_with - len_rep) * count + 1);
+    if (!result)
+        return (NULL);
+    while (count--)
+	{
+        ins = ft_strstr(orig, rep);
+        len_front = ins - orig;
+        tmp = ft_strncpy(tmp, orig, len_front) + len_front;
+        tmp = ft_strcpy(tmp, with) + len_with;
+        orig += len_front + len_rep;
+    }
+    ft_strcpy(tmp, orig);
+    return (result);
+}
+
+void	replace_exit_status(char **command, char *exit_status)
+{
+	char	*new_command;
+	char	*temp;
+	int		i;
+
+	i = 0;
+	while (command[i] != NULL)
+	{
+        new_command = str_replace(command[i], "$?", exit_status);
+        if (new_command != NULL) {
+            temp = command[i];
+            command[i] = new_command;
+            free(temp);
+        }
+        i++;
+    }
+}
+
 void	getcmd(t_list *data)
 {
+	char	*exit_status;
 	data->commandsarr = ft_split(data->prompt, ' ');
 	if (data->commandsarr == NULL)
 	{
 		printf("Error splitting command input.\n");
 		return ;
 	}
+	exit_status = getenv("?");
+	if (exit_status != NULL)
+		replace_exit_status(data->commandsarr, exit_status);
 }
 
 void	executecommands(t_list *data, char **envp)
 {
 	int	id;
 	int	i;
+	int	status;
 
 	i = 0;
 	while (data->commandsarr[i])
@@ -104,7 +170,15 @@ void	executecommands(t_list *data, char **envp)
 	if (id == 0)
 		execve(data->execcmds[0], data->execcmds, envp);
 	else
-		wait(NULL);
+    {
+        wait(&status);
+        if (WIFEXITED(status))
+        {
+            char exit_status[4];
+            sprintf(exit_status, "%d", WEXITSTATUS(status));
+            setenv("?", exit_status, 1);
+        }
+    }
 }
 
 int	checkempty(char *s)

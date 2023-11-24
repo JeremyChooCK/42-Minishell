@@ -14,8 +14,11 @@
 
 # include <stdlib.h>
 
-size_t	ft_strlen(const char *str);
 char	**ft_split(char const *s, char c);
+char    *ft_strcpy(char *dest, const char *src);
+char    *ft_strncpy(char *dest, const char *src, size_t n);
+char	*ft_strstr(char *str, char *to_find);
+size_t  ft_strlen(const char *str);
 char	*ft_strjoin( char const *s1, char const *s2);
 int		ft_strcmp(char *s1, char *s2);
 char	*ft_strdup(const char *s1);
