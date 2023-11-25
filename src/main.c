@@ -6,16 +6,20 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 20:42:34 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 21:20:10 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-// TODO fix this hardcoded minishell prompt
+char	*dynamic_prompt = NULL;
+
 void	sigint_handler(int sig)
 {
 	(void)sig;
-	printf("\nminishell> ");
+    if (dynamic_prompt != NULL)
+        printf("\n%s", dynamic_prompt);
+    else
+        printf("\nminishell> ");
 }
 
 void	sigquit_handler(int sig)
@@ -45,7 +49,7 @@ char	*ft_getpath(t_list *data)
 	int		j;
 
 	i = 0;
-	path = ft_getenv("PATH");
+	path = getenv("PATH");
 	if (path == NULL)
 		path = "/usr/local/bin:/usr/bin:/bin";
 	splitpath = ft_split(path, ':');
@@ -152,6 +156,57 @@ void	replace_exit_status(char **command, char *exit_status)
     }
 }
 
+char	*expand_env_variables(char *command)
+{
+	char	*result;
+	char	*temp;
+	char	*start;
+	char	*end;
+	char	var_name[256];
+	char	*var_value;
+
+	result = malloc(ft_strlen(command) + 1);
+	if (!result)
+		return (NULL);
+	temp = result;
+	start = command;
+	while (*start)
+	{
+		if (*start == '$')
+		{
+            start++;
+            end = start;
+            while (ft_isalnum(*end) || *end == '_')
+				end++;
+            ft_strncpy(var_name, start, end - start);
+            var_name[end - start] = '\0';
+			var_value = getenv(var_name);
+            if (var_value)
+            {
+                ft_strcpy(temp, var_value);
+                temp += ft_strlen(var_value);
+            }
+            start = end;
+        }
+        else
+            *temp++ = *start++;
+    }
+    *temp = '\0';
+    return (result);
+}
+
+void	process_command(char **command)
+{
+	char	*expanded_cmd;
+
+	expanded_cmd = expand_env_variables(*command);
+    if (expanded_cmd)
+    {
+        free(*command);
+        *command = expanded_cmd;
+    }
+}
+
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
@@ -170,6 +225,7 @@ int	getcmd(t_list *data, char **envp)
 		strarr = ft_split(data->prompt, '|');
 		while (data->i < numofpipes + 1)
 		{
+			process_command(&strarr[data->i]);
 			data->commandsarr = ft_split(strarr[data->i], ' ');
 			data->path = ft_getpath(data);
 			if (data->i == numofpipes)
@@ -192,7 +248,7 @@ int	getcmd(t_list *data, char **envp)
 		printf("Error splitting command input.\n");
 		return (0);
 	}
-	exit_status = ft_getenv("?");
+	exit_status = getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
 	return (result);
@@ -305,7 +361,7 @@ int	checkdir(char *path)
 
     if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
-        path = ft_getenv("HOME");
+        path = getenv("HOME");
         if (path == NULL)
 		{
             printf("cd: HOME not set\n");
@@ -314,7 +370,7 @@ int	checkdir(char *path)
     }
 	else if (ft_strcmp(path, "-") == 0)
 	{
-        path = ft_getenv("OLDPWD");
+        path = getenv("OLDPWD");
         if (path == NULL)
 		{
             printf("cd: OLDPWD not set\n");
@@ -356,10 +412,9 @@ void	ft_display_prompt(t_list *data, char **envp)
     char	hostname[HOSTNAME_MAX];
     char	cwd[4096];
     char	*username;
-    char	*prompt;
 	int		i;
 
-	username = ft_getenv("USER");
+	username = getenv("USER");
 	if (!username)
 		username = "user";
 	while (1)
@@ -369,15 +424,16 @@ void	ft_display_prompt(t_list *data, char **envp)
         hostname[8] = '\0';
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             ft_strncpy(cwd, "unknown", sizeof(cwd));
-        prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
-        if (!prompt)
+		dynamic_prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
+        if (!dynamic_prompt)
 		{
             perror("malloc");
             exit(1);
 		}
-        sprintf(prompt, "%s@%s:%s$ ", username, hostname, cwd);
-		data->prompt = readline(prompt);
-		free(prompt);
+        sprintf(dynamic_prompt, "%s@%s:%s$ ", username, hostname, cwd);
+		data->prompt = readline(dynamic_prompt);
+		if (dynamic_prompt != NULL)
+			free(dynamic_prompt);
 		if (!data->prompt)
 			break ;
 		if (checkempty(data->prompt) == 0)
@@ -464,12 +520,11 @@ int	main(int argc, char **argv, char **envp)
                 free(data->commandsarr[i++]);
             free(data->commandsarr);
             free(data->prompt);
-        }
-    }
-    else
-    {
-        ft_display_prompt(data, envp);
-    }
-	free(data);
+		}
+	}
+	else
+		ft_display_prompt(data, envp);
+	if (data != NULL)
+		free(data);
 	return (0);
 }

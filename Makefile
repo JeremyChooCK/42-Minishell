@@ -14,7 +14,7 @@ LIBFT = ft_split.c \
 	ft_strstr.c \
 	ft_strncpy.c \
 	ft_strcpy.c \
-	ft_getenv.c \
+	ft_isalnum.c \
 
 SRC = $(LIBFT) \
 	main.c

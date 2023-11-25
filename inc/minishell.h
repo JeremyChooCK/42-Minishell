@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 20:24:08 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 21:21:41 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -29,8 +29,6 @@
 # include <readline/history.h>
 
 # define HOSTNAME_MAX 256
-
-extern char	**environ;
 
 typedef struct s_history
 {
