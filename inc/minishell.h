@@ -43,16 +43,20 @@ typedef struct s_list
 	char		*path;
 	char		**commandsarr;
 	char		**execcmds;
+	int			pipefd[2];
+	int			stdin;
+	int			stdout;
+	int			i;
 	t_history	*history;
 }	t_list;
 
 int		checkdir(char *path);
 int		checkempty(char *s);
-void    executecommands(t_list *data, char **envp);
+void    executecommands(t_list *data, char **envp, int type);
 void	ft_add_to_history(t_list *data, char *command);
 void	ft_display_history(t_list *data);
 void    ft_display_prompt(t_list *data, char **envp);
-void    getcmd(t_list *data);
+int		getcmd(t_list *data, char **envp);
 char    *getpath(t_list *data);
 char    *remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
 char    *removedotslash(char *s);

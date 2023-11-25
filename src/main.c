@@ -72,7 +72,23 @@ char	*getpath(t_list *data)
 	free(splitpath);
 	return (NULL);
 }
+int	checkforpipe(char *s)
+{
+	int	i;
+	int	num;
 
+	num = 0;
+	i = 0;
+	while (s[i])
+	{
+		if (s[i] == '|' && s[i + 1] == '|')
+			break;
+		if (s[i] == '|' && s[i + 1] != '|')
+			num++;
+		i++;
+	}
+	return (num);
+}
 char	*str_replace(char *orig, char *rep, char *with)
 {
 	char	*result;
@@ -134,21 +150,60 @@ void	replace_exit_status(char **command, char *exit_status)
     }
 }
 
-void	getcmd(t_list *data)
-{
+
+
+int	getcmd(t_list *data, char **envp)
+{	
+	char	*temp;
+	int		numofpipes;
+	char	**strarr;
+	int 	type;
+	int		result;
 	char	*exit_status;
-	data->commandsarr = ft_split(data->prompt, ' ');
+
+	if (pipe(data->pipefd) == -1)
+	{
+		perror("pipe error");
+		exit(1);
+	}
+	data->i = 0;
+	numofpipes = checkforpipe(data->prompt);
+	if (numofpipes)
+	{
+		type = 1;
+		//strarr split prompt by |
+		strarr = ft_split(data->prompt, '|');
+		while (data->i < numofpipes + 1)
+		{
+			data->commandsarr = ft_split(strarr[data->i], ' ');
+			data->path = getpath(data);
+			if (data->i == numofpipes)
+				type = 2;
+			executecommands(data, envp, type);
+			data->i++;
+		}
+		dup2(data->stdin, 0);
+		dup2(data->stdout, 1);
+		result = 1;
+	}
+	else
+	{
+		temp = data->prompt;
+		result = 0;
+	}
+	data->commandsarr = ft_split(temp, ' ');
 	if (data->commandsarr == NULL)
 	{
 		printf("Error splitting command input.\n");
-		return ;
+		return (0);
 	}
 	exit_status = getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
+	return (result);
 }
 
-void	executecommands(t_list *data, char **envp)
+void	executecommands(t_list *data, char **envp, int type)
 {
 	int	id;
 	int	i;
@@ -169,7 +224,15 @@ void	executecommands(t_list *data, char **envp)
 	data->execcmds[i] = NULL;
 	id = fork();
 	if (id == 0)
+	{
+		close(data->pipefd[0]);
+		if (type == 1)
+			dup2(data->pipefd[1], 1);
+		if (type == 2)
+			dup2(data->stdout, 1);
+		close(data->pipefd[1]);
 		execve(data->execcmds[0], data->execcmds, envp);
+	}
 	else
     {
         wait(&status);
@@ -179,7 +242,12 @@ void	executecommands(t_list *data, char **envp)
             sprintf(exit_status, "%d", WEXITSTATUS(status));
             setenv("?", exit_status, 1);
         }
-    }
+		wait(NULL);
+		close(data->pipefd[1]);
+		if (type == 1)
+			dup2(data->pipefd[0], 0);
+		close(data->pipefd[0]);
+	}
 }
 
 int	checkempty(char *s)
@@ -187,7 +255,7 @@ int	checkempty(char *s)
 	size_t	i;
 
 	i = 0;
-	while (s[i] == ' ' || s[i] == '\t')
+	while ((s[i] == ' ' || s[i] == '\t') && s != NULL)
 		i++;
 	return (i == ft_strlen(s));
 }
@@ -297,35 +365,34 @@ void	ft_display_prompt(t_list *data, char **envp)
 		{
 			ft_add_to_history(data, data->prompt);
 			add_history(data->prompt);
-			getcmd(data);
-			if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-            {
-				free(data->path);
-				free(data->prompt);
-				break ;
-            }
-			else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-				execute_echo(data->commandsarr);
-			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-				checkdir(data->commandsarr[1]);
-			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-				ft_display_history(data);
-			else
+			if (getcmd(data, envp) == 0)
 			{
-				data->path = getpath(data);
-				if (data->prompt && *data->prompt)
-					add_history(data->prompt);
-				if (data->path)
+				if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 				{
-					executecommands(data, envp);
 					free(data->path);
+					free(data->prompt);
+					break ;
 				}
+				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+					checkdir(data->commandsarr[1]);
+				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+					ft_display_history(data);
 				else
-					printf("Command not found: %s\n", data->commandsarr[0]);
-				i = 0;
-				while (data->commandsarr[i])
-					free(data->commandsarr[i++]);
-				free(data->commandsarr);
+				{
+					data->path = getpath(data);
+					if (data->prompt && *data->prompt)
+						add_history(data->prompt);
+					if (data->path)
+					{
+						executecommands(data, envp, 0);
+					}
+					else
+						printf("Command not found: %s\n", data->commandsarr[0]);
+					i = 0;
+					while (data->commandsarr[i])
+						free(data->commandsarr[i++]);
+					free(data->commandsarr);
+				}
 			}
 		}
 		free(data->path);
@@ -340,6 +407,8 @@ int	main(int argc, char **argv, char **envp)
 
 	setup_signal_handlers();
 	data = malloc(sizeof(t_list));
+	data->stdin = dup(0);
+	data->stdout = dup(1);
 	if (!data)
 	{
 		printf("Memory allocation failed\n");
@@ -362,11 +431,11 @@ int	main(int argc, char **argv, char **envp)
 				free(data);
 				return (1);
 			}
-			getcmd(data);
+			getcmd(data, envp);
             data->path = getpath(data);
             if (data->path)
             {
-                executecommands(data, envp);
+                executecommands(data, envp, 0);
                 free(data->path);
             }
             else
@@ -380,10 +449,8 @@ int	main(int argc, char **argv, char **envp)
     }
     else
     {
-        printf("# Entering interactive mode. Fast double press Ctrl + C to quit.\n");
         ft_display_prompt(data, envp);
     }
-
-    free(data);
-    return (0);
+	free(data);
+	return (0);
 }
