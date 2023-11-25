@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 21:41:00 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 20:35:15 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef LIBFT_H
@@ -21,6 +21,8 @@ char	*ft_strstr(char *str, char *to_find);
 size_t  ft_strlen(const char *str);
 char	*ft_strjoin( char const *s1, char const *s2);
 int		ft_strcmp(char *s1, char *s2);
+int		ft_strncmp(const char *s1, const char *s2, size_t n);
 char	*ft_strdup(const char *s1);
+char	*ft_getenv(const char *name);
 
 #endif
