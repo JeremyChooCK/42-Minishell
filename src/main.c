@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 21:51:23 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 23:39:47 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -254,7 +254,27 @@ int	getcmd(t_list *data, char **envp)
 	return (result);
 }
 
-void	executecommands(t_list *data, char **envp, int type)
+void remove_quotes_from_arg(char *arg)
+{
+    int len = ft_strlen(arg);
+    if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
+			|| (arg[0] == '\'' && arg[len - 1] == '\'')))
+	{
+        ft_memmove(arg, arg + 1, len - 2);
+        arg[len - 2] = '\0';
+    }
+}
+
+void remove_quotes_from_args(char **args)
+{
+    int i = 0;
+    while (args[i] != NULL) {
+        remove_quotes_from_arg(args[i]);
+        i++;
+    }
+}
+
+void executecommands(t_list *data, char **envp, int type)
 {
     int id;
     int i;
@@ -268,7 +288,12 @@ void	executecommands(t_list *data, char **envp, int type)
     i = 0;
     while (data->commandsarr[i])
         i++;
-    data->execcmds = malloc(sizeof(char *) * i + 1);
+    data->execcmds = malloc(sizeof(char *) * (i + 1));
+    if (!data->execcmds)
+    {
+        perror("malloc error");
+        exit(EXIT_FAILURE);
+    }
     data->execcmds[0] = data->path;
     data->path = NULL;
     i = 1;
@@ -278,6 +303,7 @@ void	executecommands(t_list *data, char **envp, int type)
         i++;
     }
     data->execcmds[i] = NULL;
+    remove_quotes_from_args(data->execcmds);
     id = fork();
     if (id == 0)
     {
@@ -288,6 +314,8 @@ void	executecommands(t_list *data, char **envp, int type)
         close(data->pipefd[0]);
         close(data->pipefd[1]);
         execve(data->execcmds[0], data->execcmds, envp);
+        perror("execve");
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -296,23 +324,7 @@ void	executecommands(t_list *data, char **envp, int type)
         {
             char exit_status[4];
             int exit_code = WEXITSTATUS(status);
-            int j = 0;
-
-            if (exit_code == 0) {
-                exit_status[j++] = '0';
-            } else {
-                int reverse_num = 0;
-                while (exit_code != 0) {
-                    reverse_num = reverse_num * 10 + exit_code % 10;
-                    exit_code /= 10;
-                }
-                while (reverse_num != 0) {
-                    exit_status[j++] = (reverse_num % 10) + '0';
-                    reverse_num /= 10;
-                }
-            }
-            exit_status[j] = '\0';
-
+            snprintf(exit_status, sizeof(exit_status), "%d", exit_code);
             setenv("?", exit_status, 1);
         }
         close(data->pipefd[1]);
@@ -408,19 +420,26 @@ int	checkdir(char *path)
     return (0);
 }
 
-void	execute_echo(char **args)
+void	ft_echo(char **args)
 {
-	int	i;
+	int i = 1;
+    while (args[i] != NULL) {
+        char *arg = args[i];
+        int len = ft_strlen(arg);
+        if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
+				|| (arg[0] == '\'' && arg[len - 1] == '\''))) {
+            for (int j = 1; j < len - 1; j++) {
+                printf("%c", arg[j]);
+            }
+        } else {
+            printf("%s", arg);
+        }
 
-	i = 1;
-	while (args[i] != NULL)
-	{
-		printf("%s", args[i]);
-		if (args[i + 1] != NULL)
-			printf(" ");
-		i++;
-	}
-	printf("\n");
+        if (args[i + 1] != NULL)
+            printf(" ");
+        i++;
+    }
+    printf("\n");
 }
 
 // TODO: Refactor shell build in functions into separate functions
@@ -470,6 +489,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 					free(data->prompt);
 					break ;
 				}
+				else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+					ft_echo(data->commandsarr);
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 					checkdir(data->commandsarr[1]);
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
