@@ -6,11 +6,12 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/23 20:53:46 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/11/25 11:40:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
+// TODO check for forbidden function regularly.
 void	sigint_handler(int sig)
 {
 	(void)sig;
@@ -233,9 +234,8 @@ void	ft_display_history(t_list *data)
 
 int	checkdir(char *path)
 {
-	char cwd[4096];
+	char	cwd[4096];
 
-    // If no path given, default to the HOME directory
     if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
         path = getenv("HOME");
@@ -247,28 +247,40 @@ int	checkdir(char *path)
     }
 	else if (ft_strcmp(path, "-") == 0)
 	{
-        // Implement the 'cd -' functionality to go to the previous directory
         path = getenv("OLDPWD");
         if (path == NULL)
 		{
             printf("cd: OLDPWD not set\n");
             exit(1);
         }
-        printf("%s\n", path); // Print the new directory
+        printf("%s\n", path);
     }
-    // Save the current directory before changing it
     if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
         perror("cd: getcwd failed");
         exit(1);
     }
-    // Change to the new directory
     if (chdir(path) != 0)
 	{
         perror("cd");
         exit(1);
     }
     return (0);
+}
+
+void	execute_echo(char **args)
+{
+	int	i;
+
+	i = 1;
+	while (args[i] != NULL)
+	{
+		printf("%s", args[i]);
+		if (args[i + 1] != NULL)
+			printf(" ");
+		i++;
+	}
+	printf("\n");
 }
 
 // TODO: Refactor shell build in functions into separate functions
@@ -292,6 +304,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 				free(data->prompt);
 				break ;
             }
+			else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+				execute_echo(data->commandsarr);
 			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 				checkdir(data->commandsarr[1]);
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
@@ -321,23 +335,55 @@ void	ft_display_prompt(t_list *data, char **envp)
 
 int	main(int argc, char **argv, char **envp)
 {
+	int		i;
 	t_list	*data;
 
-	(void)argv;
 	setup_signal_handlers();
-	if (argc > 1)
-	{
-		printf("No arguments are required for minishell\n");
-		return (1);
-	}
 	data = malloc(sizeof(t_list));
 	if (!data)
 	{
 		printf("Memory allocation failed\n");
 		return (1);
 	}
-	printf("# Still testing signals, fast double press ctrl + c to quit.\n");
-	ft_display_prompt(data, envp);
-	free(data);
-	return (0);
+	if (argc > 1 && ft_strcmp(argv[1], "-c") == 0)
+	{
+		if (argv[2] == NULL)
+		{
+			printf("No command specified for -c option\n");
+			free(data);
+			return (1);
+		}
+		else
+		{
+			data->prompt = strdup(argv[2]);
+			if (data->prompt == NULL)
+			{
+				printf("Memory allocation failed\n");
+				free(data);
+				return (1);
+			}
+			getcmd(data);
+            data->path = getpath(data);
+            if (data->path)
+            {
+                executecommands(data, envp);
+                free(data->path);
+            }
+            else
+                printf("Command not found: %s\n", data->commandsarr[0]);
+            i = 0;
+            while (data->commandsarr[i])
+                free(data->commandsarr[i++]);
+            free(data->commandsarr);
+            free(data->prompt);
+        }
+    }
+    else
+    {
+        printf("# Entering interactive mode. Fast double press Ctrl + C to quit.\n");
+        ft_display_prompt(data, envp);
+    }
+
+    free(data);
+    return (0);
 }
