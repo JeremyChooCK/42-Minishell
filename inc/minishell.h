@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/22 22:52:18 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 18:22:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -27,8 +27,8 @@
 # include <limits.h>
 # include <readline/readline.h>
 # include <readline/history.h>
-// this wont work on my mac, please dont add this thanks!
-// #include <linux/limits.h>
+
+# define HOSTNAME_MAX 256
 
 typedef struct s_history
 {
