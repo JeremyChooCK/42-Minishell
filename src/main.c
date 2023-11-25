@@ -159,11 +159,6 @@ int	getcmd(t_list *data, char **envp)
 	int		result;
 	char	*exit_status;
 
-	if (pipe(data->pipefd) == -1)
-	{
-		perror("pipe error");
-		exit(1);
-	}
 	data->i = 0;
 	numofpipes = checkforpipe(data->prompt);
 	if (numofpipes)
@@ -207,6 +202,11 @@ void	executecommands(t_list *data, char **envp, int type)
 	int	i;
 	int	status;
 
+	if (pipe(data->pipefd) == -1)
+	{
+		perror("pipe error");
+		exit(EXIT_FAILURE);
+	}
 	i = 0;
 	while (data->commandsarr[i])
 		i++;
@@ -223,11 +223,11 @@ void	executecommands(t_list *data, char **envp, int type)
 	id = fork();
 	if (id == 0)
 	{
-		close(data->pipefd[0]);
 		if (type == 1)
 			dup2(data->pipefd[1], 1);
 		if (type == 2)
 			dup2(data->stdout, 1);
+		close(data->pipefd[0]);
 		close(data->pipefd[1]);
 		execve(data->execcmds[0], data->execcmds, envp);
 	}
@@ -240,7 +240,6 @@ void	executecommands(t_list *data, char **envp, int type)
             sprintf(exit_status, "%d", WEXITSTATUS(status));
             setenv("?", exit_status, 1);
         }
-		wait(NULL);
 		close(data->pipefd[1]);
 		if (type == 1)
 			dup2(data->pipefd[0], 0);
@@ -353,7 +352,7 @@ void	execute_echo(char **args)
 void	ft_display_prompt(t_list *data, char **envp)
 {
     char	hostname[HOSTNAME_MAX];
-    char	cwd[PATH_MAX];
+    char	cwd[4096];
     char	*username;
     char	*prompt;
 	int		i;
