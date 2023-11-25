@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 11:40:44 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 18:26:20 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -150,10 +150,8 @@ void	replace_exit_status(char **command, char *exit_status)
     }
 }
 
-
-
 int	getcmd(t_list *data, char **envp)
-{	
+{
 	char	*temp;
 	int		numofpipes;
 	char	**strarr;
@@ -354,11 +352,31 @@ void	execute_echo(char **args)
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
+    char	hostname[HOSTNAME_MAX];
+    char	cwd[PATH_MAX];
+    char	*username;
+    char	*prompt;
 	int		i;
 
+	username = getenv("USER");
+	if (!username)
+		username = "user";
 	while (1)
 	{
-		data->prompt = readline("minishell> ");
+		if (gethostname(hostname, sizeof(hostname)) != 0)
+			ft_strncpy(hostname, "unknown", sizeof(hostname));
+        hostname[8] = '\0';
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
+            ft_strncpy(cwd, "unknown", sizeof(cwd));
+        prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
+        if (!prompt)
+		{
+            perror("malloc");
+            exit(1);
+		}
+        sprintf(prompt, "%s@%s:%s$ ", username, hostname, cwd);
+		data->prompt = readline(prompt);
+		free(prompt);
 		if (!data->prompt)
 			break ;
 		if (checkempty(data->prompt) == 0)
