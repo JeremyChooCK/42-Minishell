@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 21:20:10 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 21:51:23 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -256,53 +256,70 @@ int	getcmd(t_list *data, char **envp)
 
 void	executecommands(t_list *data, char **envp, int type)
 {
-	int	id;
-	int	i;
-	int	status;
+    int id;
+    int i;
+    int status;
 
-	if (pipe(data->pipefd) == -1)
-	{
-		perror("pipe error");
-		exit(EXIT_FAILURE);
-	}
-	i = 0;
-	while (data->commandsarr[i])
-		i++;
-	data->execcmds = malloc(sizeof(char *) * i + 1);
-	data->execcmds[0] = data->path;
-	data->path = NULL;
-	i = 1;
-	while (data->commandsarr[i])
-	{
-		data->execcmds[i] = data->commandsarr[i];
-		i++;
-	}
-	data->execcmds[i] = NULL;
-	id = fork();
-	if (id == 0)
-	{
-		if (type == 1)
-			dup2(data->pipefd[1], 1);
-		if (type == 2)
-			dup2(data->stdout, 1);
-		close(data->pipefd[0]);
-		close(data->pipefd[1]);
-		execve(data->execcmds[0], data->execcmds, envp);
-	}
-	else
+    if (pipe(data->pipefd) == -1)
+    {
+        perror("pipe error");
+        exit(EXIT_FAILURE);
+    }
+    i = 0;
+    while (data->commandsarr[i])
+        i++;
+    data->execcmds = malloc(sizeof(char *) * i + 1);
+    data->execcmds[0] = data->path;
+    data->path = NULL;
+    i = 1;
+    while (data->commandsarr[i])
+    {
+        data->execcmds[i] = data->commandsarr[i];
+        i++;
+    }
+    data->execcmds[i] = NULL;
+    id = fork();
+    if (id == 0)
+    {
+        if (type == 1)
+            dup2(data->pipefd[1], 1);
+        if (type == 2)
+            dup2(data->stdout, 1);
+        close(data->pipefd[0]);
+        close(data->pipefd[1]);
+        execve(data->execcmds[0], data->execcmds, envp);
+    }
+    else
     {
         wait(&status);
         if (WIFEXITED(status))
         {
             char exit_status[4];
-            sprintf(exit_status, "%d", WEXITSTATUS(status));
+            int exit_code = WEXITSTATUS(status);
+            int j = 0;
+
+            if (exit_code == 0) {
+                exit_status[j++] = '0';
+            } else {
+                int reverse_num = 0;
+                while (exit_code != 0) {
+                    reverse_num = reverse_num * 10 + exit_code % 10;
+                    exit_code /= 10;
+                }
+                while (reverse_num != 0) {
+                    exit_status[j++] = (reverse_num % 10) + '0';
+                    reverse_num /= 10;
+                }
+            }
+            exit_status[j] = '\0';
+
             setenv("?", exit_status, 1);
         }
-		close(data->pipefd[1]);
-		if (type == 1)
-			dup2(data->pipefd[0], 0);
-		close(data->pipefd[0]);
-	}
+        close(data->pipefd[1]);
+        if (type == 1)
+            dup2(data->pipefd[0], 0);
+        close(data->pipefd[0]);
+    }
 }
 
 int	checkempty(char *s)
@@ -430,10 +447,15 @@ void	ft_display_prompt(t_list *data, char **envp)
             perror("malloc");
             exit(1);
 		}
-        sprintf(dynamic_prompt, "%s@%s:%s$ ", username, hostname, cwd);
-		data->prompt = readline(dynamic_prompt);
-		if (dynamic_prompt != NULL)
-			free(dynamic_prompt);
+        strcpy(dynamic_prompt, username);
+        strcat(dynamic_prompt, "@");
+        strcat(dynamic_prompt, hostname);
+        strcat(dynamic_prompt, ":");
+        strcat(dynamic_prompt, cwd);
+        strcat(dynamic_prompt, "$ ");
+        data->prompt = readline(dynamic_prompt);
+        if (dynamic_prompt != NULL)
+            free(dynamic_prompt);
 		if (!data->prompt)
 			break ;
 		if (checkempty(data->prompt) == 0)
