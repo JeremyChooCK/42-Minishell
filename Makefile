@@ -3,32 +3,38 @@ CC = cc
 CFLAGS = -Wall -Wextra -Werror -g
 LDFLAGS = -lreadline
 INCLUDE = inc
+BUILDDIR = build
+
 LIBFT = ft_split.c \
 	ft_strcmp.c \
+	ft_strncmp.c \
 	ft_strjoin.c \
 	ft_strlen.c \
 	ft_strdup.c \
 	ft_strstr.c \
 	ft_strncpy.c \
 	ft_strcpy.c \
+	ft_getenv.c \
 
 SRC = $(LIBFT) \
 	main.c
 
 SRC := $(addprefix src/,$(SRC))
+OBJS = $(SRC:src/%.c=$(BUILDDIR)/%.o)
 
-OBJS = $(SRC:.c=.o)
+all: $(BUILDDIR) $(NAME)
 
-all: $(NAME)
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
 
-%.o: %.c
+$(BUILDDIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE) -c $< -o $@
 
 $(NAME): $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -I$(INCLUDE) -o $(NAME)
 
 clean:
-	rm -f $(OBJS)
+	rm -rf $(BUILDDIR)
 
 fclean: clean
 	rm -f $(NAME)
@@ -36,4 +42,3 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
-

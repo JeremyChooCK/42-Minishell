@@ -6,16 +6,16 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 18:26:20 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/25 20:42:34 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-// TODO check for forbidden function regularly.
+// TODO fix this hardcoded minishell prompt
 void	sigint_handler(int sig)
 {
 	(void)sig;
-	write(1, "\nminishell> ", 12);
+	printf("\nminishell> ");
 }
 
 void	sigquit_handler(int sig)
@@ -35,7 +35,7 @@ void	setup_signal_handlers(void)
 	sigaction(SIGQUIT, &sa, NULL);
 }
 
-char	*getpath(t_list *data)
+char	*ft_getpath(t_list *data)
 {
 	char	**splitpath;
 	char	*path;
@@ -45,7 +45,7 @@ char	*getpath(t_list *data)
 	int		j;
 
 	i = 0;
-	path = getenv("PATH");
+	path = ft_getenv("PATH");
 	if (path == NULL)
 		path = "/usr/local/bin:/usr/bin:/bin";
 	splitpath = ft_split(path, ':');
@@ -72,6 +72,7 @@ char	*getpath(t_list *data)
 	free(splitpath);
 	return (NULL);
 }
+
 int	checkforpipe(char *s)
 {
 	int	i;
@@ -82,13 +83,14 @@ int	checkforpipe(char *s)
 	while (s[i])
 	{
 		if (s[i] == '|' && s[i + 1] == '|')
-			break;
+			break ;
 		if (s[i] == '|' && s[i + 1] != '|')
 			num++;
 		i++;
 	}
 	return (num);
 }
+
 char	*str_replace(char *orig, char *rep, char *with)
 {
 	char	*result;
@@ -169,7 +171,7 @@ int	getcmd(t_list *data, char **envp)
 		while (data->i < numofpipes + 1)
 		{
 			data->commandsarr = ft_split(strarr[data->i], ' ');
-			data->path = getpath(data);
+			data->path = ft_getpath(data);
 			if (data->i == numofpipes)
 				type = 2;
 			executecommands(data, envp, type);
@@ -190,7 +192,7 @@ int	getcmd(t_list *data, char **envp)
 		printf("Error splitting command input.\n");
 		return (0);
 	}
-	exit_status = getenv("?");
+	exit_status = ft_getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
 	return (result);
@@ -303,7 +305,7 @@ int	checkdir(char *path)
 
     if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
-        path = getenv("HOME");
+        path = ft_getenv("HOME");
         if (path == NULL)
 		{
             printf("cd: HOME not set\n");
@@ -312,7 +314,7 @@ int	checkdir(char *path)
     }
 	else if (ft_strcmp(path, "-") == 0)
 	{
-        path = getenv("OLDPWD");
+        path = ft_getenv("OLDPWD");
         if (path == NULL)
 		{
             printf("cd: OLDPWD not set\n");
@@ -357,7 +359,7 @@ void	ft_display_prompt(t_list *data, char **envp)
     char	*prompt;
 	int		i;
 
-	username = getenv("USER");
+	username = ft_getenv("USER");
 	if (!username)
 		username = "user";
 	while (1)
@@ -396,7 +398,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 					ft_display_history(data);
 				else
 				{
-					data->path = getpath(data);
+					data->path = ft_getpath(data);
 					if (data->prompt && *data->prompt)
 						add_history(data->prompt);
 					if (data->path)
@@ -449,7 +451,7 @@ int	main(int argc, char **argv, char **envp)
 				return (1);
 			}
 			getcmd(data, envp);
-            data->path = getpath(data);
+            data->path = ft_getpath(data);
             if (data->path)
             {
                 executecommands(data, envp, 0);
