@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 21:51:23 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/26 00:20:24 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -254,7 +254,27 @@ int	getcmd(t_list *data, char **envp)
 	return (result);
 }
 
-void	executecommands(t_list *data, char **envp, int type)
+void remove_quotes_from_arg(char *arg)
+{
+    int len = ft_strlen(arg);
+    if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
+			|| (arg[0] == '\'' && arg[len - 1] == '\'')))
+	{
+        ft_memmove(arg, arg + 1, len - 2);
+        arg[len - 2] = '\0';
+    }
+}
+
+void remove_quotes_from_args(char **args)
+{
+    int i = 0;
+    while (args[i] != NULL) {
+        remove_quotes_from_arg(args[i]);
+        i++;
+    }
+}
+
+void executecommands(t_list *data, char **envp, int type)
 {
     int id;
     int i;
@@ -268,7 +288,12 @@ void	executecommands(t_list *data, char **envp, int type)
     i = 0;
     while (data->commandsarr[i])
         i++;
-    data->execcmds = malloc(sizeof(char *) * i + 1);
+    data->execcmds = malloc(sizeof(char *) * (i + 1));
+    if (!data->execcmds)
+    {
+        perror("malloc error");
+        exit(EXIT_FAILURE);
+    }
     data->execcmds[0] = data->path;
     data->path = NULL;
     i = 1;
@@ -278,6 +303,7 @@ void	executecommands(t_list *data, char **envp, int type)
         i++;
     }
     data->execcmds[i] = NULL;
+    remove_quotes_from_args(data->execcmds);
     id = fork();
     if (id == 0)
     {
@@ -288,6 +314,8 @@ void	executecommands(t_list *data, char **envp, int type)
         close(data->pipefd[0]);
         close(data->pipefd[1]);
         execve(data->execcmds[0], data->execcmds, envp);
+        perror("execve");
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -296,23 +324,7 @@ void	executecommands(t_list *data, char **envp, int type)
         {
             char exit_status[4];
             int exit_code = WEXITSTATUS(status);
-            int j = 0;
-
-            if (exit_code == 0) {
-                exit_status[j++] = '0';
-            } else {
-                int reverse_num = 0;
-                while (exit_code != 0) {
-                    reverse_num = reverse_num * 10 + exit_code % 10;
-                    exit_code /= 10;
-                }
-                while (reverse_num != 0) {
-                    exit_status[j++] = (reverse_num % 10) + '0';
-                    reverse_num /= 10;
-                }
-            }
-            exit_status[j] = '\0';
-
+            snprintf(exit_status, sizeof(exit_status), "%d", exit_code);
             setenv("?", exit_status, 1);
         }
         close(data->pipefd[1]);
@@ -408,19 +420,46 @@ int	checkdir(char *path)
     return (0);
 }
 
-void	execute_echo(char **args)
+static void echo_out(char **str, int pos) {
+    int starts_with;
+    int ends_with;
+    int str_len;
+
+    starts_with = (str[pos][0] == '\"' || str[pos][0] == '\'');
+    str_len = ft_strlen(str[pos]);
+    ends_with = (str[pos][str_len - 1] == '\"' || str[pos][str_len - 1] == '\'');
+    if (ends_with && starts_with)
+        printf("%.*s", str_len - 2, str[pos] + 1);
+    else if (ends_with)
+        printf("%.*s", str_len - 1, str[pos]);
+    else if (starts_with)
+		printf("%s", str[pos] + 1);
+	else
+        printf("%s", str[pos]);
+    if (str[pos + 1])
+        printf(" ");
+}
+
+int	ft_echo(char **args)
 {
 	int	i;
+	int	n_flag;
 
-	i = 1;
-	while (args[i] != NULL)
-	{
-		printf("%s", args[i]);
-		if (args[i + 1] != NULL)
-			printf(" ");
-		i++;
-	}
-	printf("\n");
+	n_flag = 0;
+    if (!args[0]) {
+        printf("\n");
+        return 1;
+    } else if (args[0][0] == '-' && args[0][1] == 'n' && args[0][2] == '\0') {
+        n_flag = 1;
+    }
+    i = n_flag ? 0 : -1;
+    while (args[++i]) {
+        echo_out(args, i);
+        if (!args[i + 1] && !n_flag) {
+            printf("\n");
+        }
+    }
+    return 1;
 }
 
 // TODO: Refactor shell build in functions into separate functions
@@ -470,6 +509,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 					free(data->prompt);
 					break ;
 				}
+				else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+					ft_echo(data->commandsarr + 1);
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 					checkdir(data->commandsarr[1]);
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
