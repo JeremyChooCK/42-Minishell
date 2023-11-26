@@ -6,6 +6,8 @@ INCLUDE = inc
 BUILDDIR = build
 
 LIBFT = ft_split.c \
+	ft_strcat.c \
+	ft_strchr.c \
 	ft_strcmp.c \
 	ft_strncmp.c \
 	ft_strjoin.c \

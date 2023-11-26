@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/25 21:21:41 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/26 21:25:08 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -30,6 +30,18 @@
 
 # define HOSTNAME_MAX 256
 
+typedef struct s_env_var
+{
+	char	*key;
+	char	*value;
+}	t_env_var;
+
+typedef struct s_env_list
+{
+	t_env_var			env_var;
+	struct s_env_list	*next;
+}	t_env_list;
+
 typedef struct s_history
 {
 	char				*command;
@@ -48,6 +60,7 @@ typedef struct s_list
 	int			stdout;
 	int			i;
 	t_history	*history;
+	t_env_list	*env_vars;
 }	t_list;
 
 int		checkdir(char *path);

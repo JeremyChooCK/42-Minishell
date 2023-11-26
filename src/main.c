@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/26 15:33:42 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/26 21:40:29 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -495,12 +495,12 @@ void	ft_display_prompt(t_list *data, char **envp)
             perror("malloc");
             exit(1);
 		}
-        strcpy(dynamic_prompt, username);
-        strcat(dynamic_prompt, "@");
-        strcat(dynamic_prompt, hostname);
-        strcat(dynamic_prompt, ":");
-        strcat(dynamic_prompt, cwd);
-        strcat(dynamic_prompt, "$ ");
+        ft_strcpy(dynamic_prompt, username);
+        ft_strcat(dynamic_prompt, "@");
+        ft_strcat(dynamic_prompt, hostname);
+        ft_strcat(dynamic_prompt, ":");
+        ft_strcat(dynamic_prompt, cwd);
+        ft_strcat(dynamic_prompt, "$ ");
         data->prompt = readline(dynamic_prompt);
         if (dynamic_prompt != NULL)
             free(dynamic_prompt);
@@ -553,12 +553,78 @@ void	ft_display_prompt(t_list *data, char **envp)
 	}
 }
 
+t_env_list	*create_env_node(char *env_str)
+{
+	t_env_list	*node;
+	char		*separator;
+	int			key_len;
+
+	node = malloc(sizeof(t_env_list));
+	if (!node)
+		return (NULL);
+	separator = ft_strchr(env_str, '=');
+	if (!separator)
+		return (NULL);
+	key_len = separator - env_str;
+	node->env_var.key = strndup(env_str, key_len);
+	node->env_var.value = strdup(separator + 1);
+	node->next = NULL;
+	return (node);
+}
+
+void	ft_init_t_env(char **envp, t_env_list **env_list)
+{
+	int			i;
+	t_env_list	*current;
+	t_env_list	*new_node;
+
+    if (!envp || !env_list)
+        return;
+    *env_list = NULL;
+	current = NULL;
+	i = 0;
+	while (envp[i] != NULL)
+    {
+		new_node = create_env_node(envp[i]);
+        if (!new_node)
+            continue ;
+        if (current == NULL)
+        {
+            *env_list = new_node;
+            current = *env_list;
+        }
+        else
+        {
+            current->next = new_node;
+            current = current->next;
+        }
+		i++;
+    }
+}
+
+void	ft_free_env_vars(t_env_list *env_vars)
+{
+	t_env_list	*current;
+	t_env_list	*next;
+
+	current = env_vars;
+    while (current != NULL)
+    {
+        next = current->next;
+        free(current->env_var.key);
+        free(current->env_var.value);
+        free(current);
+        current = next;
+    }
+}
+
 int	main(int argc, char **argv, char **envp)
 {
-	int		i;
 	t_list	*data;
 
 	setup_signal_handlers();
+	if (!argc && !argv)
+		return (0);
 	data = malloc(sizeof(t_list));
 	data->stdin = dup(0);
 	data->stdout = dup(1);
@@ -567,42 +633,12 @@ int	main(int argc, char **argv, char **envp)
 		printf("Memory allocation failed\n");
 		return (1);
 	}
-	if (argc > 1 && ft_strcmp(argv[1], "-c") == 0)
-	{
-		if (argv[2] == NULL)
-		{
-			printf("No command specified for -c option\n");
-			free(data);
-			return (1);
-		}
-		else
-		{
-			data->prompt = strdup(argv[2]);
-			if (data->prompt == NULL)
-			{
-				printf("Memory allocation failed\n");
-				free(data);
-				return (1);
-			}
-			getcmd(data, envp);
-            data->path = ft_getpath(data);
-            if (data->path)
-            {
-                executecommands(data, envp, 0);
-                free(data->path);
-            }
-            else
-                printf("Command not found: %s\n", data->commandsarr[0]);
-            i = 0;
-            while (data->commandsarr[i])
-                free(data->commandsarr[i++]);
-            free(data->commandsarr);
-            free(data->prompt);
-		}
-	}
-	else
-		ft_display_prompt(data, envp);
+	ft_init_t_env(envp, &(data->env_vars));
+	ft_display_prompt(data, envp);
 	if (data != NULL)
+	{
+		ft_free_env_vars(data->env_vars);
 		free(data);
+	}
 	return (0);
 }
