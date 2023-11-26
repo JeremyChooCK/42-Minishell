@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/26 00:20:24 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/26 15:33:42 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -425,18 +425,19 @@ int	checkdir(char *path)
     return (0);
 }
 
-static void echo_out(char **str, int pos) {
+void	echo_out(char **str, int pos)
+{
     int starts_with;
     int ends_with;
-    int str_len;
+    int len;
 
     starts_with = (str[pos][0] == '\"' || str[pos][0] == '\'');
-    str_len = ft_strlen(str[pos]);
-    ends_with = (str[pos][str_len - 1] == '\"' || str[pos][str_len - 1] == '\'');
+    len = ft_strlen(str[pos]);
+    ends_with = (str[pos][len - 1] == '\"' || str[pos][len - 1] == '\'');
     if (ends_with && starts_with)
-        printf("%.*s", str_len - 2, str[pos] + 1);
+        printf("%.*s", len - 2, str[pos] + 1);
     else if (ends_with)
-        printf("%.*s", str_len - 1, str[pos]);
+        printf("%.*s", len - 1, str[pos]);
     else if (starts_with)
 		printf("%s", str[pos] + 1);
 	else
@@ -451,20 +452,23 @@ int	ft_echo(char **args)
 	int	n_flag;
 
 	n_flag = 0;
-    if (!args[0]) {
-        printf("\n");
-        return 1;
-    } else if (args[0][0] == '-' && args[0][1] == 'n' && args[0][2] == '\0') {
-        n_flag = 1;
-    }
-    i = n_flag ? 0 : -1;
-    while (args[++i]) {
+	if (!args[0])
+	{
+		printf("\n");
+		return (0);
+	}
+	else if (args[0][0] == '-' && args[0][1] == 'n' && args[0][2] == '\0')
+		n_flag = 1;
+	i = -1;
+	if (n_flag)
+    	i = 0;
+    while (args[++i])
+	{
         echo_out(args, i);
-        if (!args[i + 1] && !n_flag) {
+        if (!args[i + 1] && !n_flag)
             printf("\n");
-        }
     }
-    return 1;
+    return (0);
 }
 
 // TODO: Refactor shell build in functions into separate functions
@@ -515,7 +519,12 @@ void	ft_display_prompt(t_list *data, char **envp)
 					break ;
 				}
 				else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-					ft_echo(data->commandsarr + 1);
+				{
+					int exit_code = ft_echo(data->commandsarr + 1);
+					char exit_status_str[4];
+					snprintf(exit_status_str, sizeof(exit_status_str), "%d", exit_code);
+					setenv("?", exit_status_str, 1);
+				}
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 					checkdir(data->commandsarr[1]);
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
