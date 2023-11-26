@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/26 15:33:42 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/26 16:56:21 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -158,29 +158,36 @@ void	replace_exit_status(char **command, char *exit_status)
 
 char	*expand_env_variables(char *command)
 {
-	char	*result;
-	char	*temp;
-	char	*start;
-	char	*end;
-	char	var_name[256];
-	char	*var_value;
+    char *result;
+    char *temp;
+    char *start;
+    char *end;
+    char var_name[256];
+    char *var_value;
+    int in_single_quote = 0;
+    int in_double_quote = 0;
 
-	result = malloc(ft_strlen(command) + 1);
-	if (!result)
-		return (NULL);
-	temp = result;
-	start = command;
-	while (*start)
-	{
-		if (*start == '$')
-		{
+    result = malloc(ft_strlen(command) + 1);
+    if (!result)
+        return (NULL);
+    temp = result;
+    start = command;
+    while (*start)
+    {
+        if (*start == '\'')
+            in_single_quote = !in_single_quote;
+        else if (*start == '\"')
+            in_double_quote = !in_double_quote;
+
+        if (*start == '$' && !in_single_quote)
+        {
             start++;
             end = start;
             while (ft_isalnum(*end) || *end == '_')
-				end++;
+                end++;
             ft_strncpy(var_name, start, end - start);
             var_name[end - start] = '\0';
-			var_value = getenv(var_name);
+            var_value = getenv(var_name);
             if (var_value)
             {
                 ft_strcpy(temp, var_value);
@@ -326,7 +333,7 @@ void executecommands(t_list *data, char **envp, int type)
         	close(data->pipefd[0]);
 		}
         else
-		{	
+		{
 			wait(&status);
 			if (WIFEXITED(status))
 			{
@@ -425,25 +432,54 @@ int	checkdir(char *path)
     return (0);
 }
 
+void	remove_chars(char *str, const char *chars_to_remove)
+{
+	int	i;
+	int	j;
+	int	k;
+	int	len;
+	int	should_remove;
+	int	remove_len;
+
+	len = ft_strlen(str);
+	remove_len = ft_strlen(chars_to_remove);
+	i = 0;
+	j = 0;
+	while (i < len)
+	{
+		should_remove = 0;
+		k = 0;
+		while (k < remove_len)
+		{
+			if (str[i] == chars_to_remove[k])
+			{
+				should_remove = 1;
+				break ;
+			}
+			k++;
+		}
+		if (!should_remove)
+			str[j++] = str[i];
+		i++;
+	}
+	str[j] = '\0';
+}
+
 void	echo_out(char **str, int pos)
 {
-    int starts_with;
-    int ends_with;
-    int len;
+	char	*temp;
 
-    starts_with = (str[pos][0] == '\"' || str[pos][0] == '\'');
-    len = ft_strlen(str[pos]);
-    ends_with = (str[pos][len - 1] == '\"' || str[pos][len - 1] == '\'');
-    if (ends_with && starts_with)
-        printf("%.*s", len - 2, str[pos] + 1);
-    else if (ends_with)
-        printf("%.*s", len - 1, str[pos]);
-    else if (starts_with)
-		printf("%s", str[pos] + 1);
-	else
-        printf("%s", str[pos]);
-    if (str[pos + 1])
-        printf(" ");
+	temp = ft_strdup(str[pos]);
+	if (temp == NULL)
+	{
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+	remove_chars(temp, "'\"");
+	printf("%s", temp);
+	if (str[pos + 1])
+		printf(" ");
+	free(temp);
 }
 
 int	ft_echo(char **args)
