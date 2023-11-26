@@ -319,18 +319,23 @@ void executecommands(t_list *data, char **envp, int type)
     }
     else
     {
-        wait(&status);
-        if (WIFEXITED(status))
-        {
-            char exit_status[4];
-            int exit_code = WEXITSTATUS(status);
-            snprintf(exit_status, sizeof(exit_status), "%d", exit_code);
-            setenv("?", exit_status, 1);
-        }
         close(data->pipefd[1]);
         if (type == 1)
-            dup2(data->pipefd[0], 0);
-        close(data->pipefd[0]);
+        {
+			dup2(data->pipefd[0], 0);
+        	close(data->pipefd[0]);
+		}
+        else
+		{	
+			wait(&status);
+			if (WIFEXITED(status))
+			{
+				char exit_status[4];
+				int exit_code = WEXITSTATUS(status);
+				snprintf(exit_status, sizeof(exit_status), "%d", exit_code);
+				setenv("?", exit_status, 1);
+			}
+		}
     }
 }
 
@@ -523,6 +528,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 					if (data->path)
 					{
 						executecommands(data, envp, 0);
+						wait(NULL);
 					}
 					else
 						printf("Command not found: %s\n", data->commandsarr[0]);
