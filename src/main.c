@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/27 20:32:01 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/27 23:11:09 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -214,6 +214,44 @@ void	process_command(char **command)
     }
 }
 
+int process_quotes(char *cmd_line)
+{
+    int in_single_quote = 0;
+    int in_double_quote = 0;
+
+    for (int i = 0; cmd_line[i] != '\0'; ++i) {
+        if (cmd_line[i] == '\'' && !in_double_quote)
+            in_single_quote = !in_single_quote;
+        else if (cmd_line[i] == '\"' && !in_single_quote)
+            in_double_quote = !in_double_quote;
+        else if (cmd_line[i] == '\\' && !in_single_quote)
+		{
+            if (cmd_line[i + 1] != '\0')
+				i++;
+            else
+				return (-1);
+        }
+    }
+    return (in_single_quote || in_double_quote) ? -1 : 0;
+}
+
+char	**split_command_line(char *cmd_line)
+{
+    return (ft_split(cmd_line, ' '));
+}
+
+void	prepare_execution(char **cmd_parts)
+{
+	int	i;
+
+	i = 0;
+	while (cmd_parts[i] != NULL)
+	{
+		++i;
+        cmd_parts[i] = expand_env_variables(cmd_parts[i]);
+	}
+}
+
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
@@ -223,12 +261,27 @@ int	getcmd(t_list *data, char **envp)
 	int		result;
 	char	*exit_status;
 
+    if (process_quotes(data->prompt) < 0) {
+        fprintf(stderr, "Error: Unmatched quotes in command.\n");
+        return -1;
+    }
+    char **cmd_parts = split_command_line(data->prompt);
+    if (!cmd_parts) {
+        fprintf(stderr, "Error splitting command input.\n");
+        return -1;
+    }
+    for (int i = 0; cmd_parts[i] != NULL; ++i) {
+        char *expanded_cmd = expand_env_variables(cmd_parts[i]);
+        if (expanded_cmd) {
+            free(cmd_parts[i]);
+            cmd_parts[i] = expanded_cmd;
+        }
+    }
 	data->i = 0;
 	numofpipes = checkforpipe(data->prompt);
 	if (numofpipes)
 	{
 		type = 1;
-		//strarr split prompt by |
 		strarr = ft_split(data->prompt, '|');
 		while (data->i < numofpipes + 1)
 		{
