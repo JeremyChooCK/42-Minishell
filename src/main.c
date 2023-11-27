@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/26 22:37:38 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/27 20:32:01 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -477,14 +477,13 @@ void	echo_out(char **str, int pos)
 	}
 	remove_chars(temp, "'\"");
 	printf("%s", temp);
-	if (str[pos + 1])
-		printf(" ");
 	free(temp);
 }
 
 int	ft_echo(char **args)
 {
 	int	i;
+	int	j;
 	int	n_flag;
 
 	n_flag = 0;
@@ -493,18 +492,28 @@ int	ft_echo(char **args)
 		printf("\n");
 		return (0);
 	}
-	else if (args[0][0] == '-' && args[0][1] == 'n' && args[0][2] == '\0')
-		n_flag = 1;
-	i = -1;
-	if (n_flag)
-    	i = 0;
-    while (args[++i])
+	i = 0;
+	while (args[i] && args[i][0] == '-')
 	{
-        echo_out(args, i);
-        if (!args[i + 1] && !n_flag)
-            printf("\n");
-    }
-    return (0);
+		j = 1;
+		while (args[i][j] == 'n')
+			j++;
+		if (args[i][j] == '\0')
+			n_flag = 1;
+		else
+			break ;
+		i++;
+	}
+	while (args[i])
+	{
+		echo_out(args, i);
+		if (args[i + 1])
+			printf(" ");
+		i++;
+	}
+	if (!n_flag)
+		printf("\n");
+	return (0);
 }
 
 // TODO: Refactor shell build in functions into separate functions
