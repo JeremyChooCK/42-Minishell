@@ -334,6 +334,66 @@ void remove_quotes_from_args(char **args)
     }
 }
 
+void	reassign(t_list *data, int flag)
+{
+	char	*nameofinfile;
+	char	**result;
+	int		i;
+	int		j;
+
+	i = 0;
+	result = malloc(sizeof(char *) * 3);
+	if (flag == 0) // if "<" "infile"
+	{
+		result[0] = data->execcmds[2];
+		result[1] = data->execcmds[3];
+		free(data->execcmds[0]);
+		data->inputfd = open(data->execcmds[1], O_RDONLY);
+		dup2(data->inputfd, 0);
+		close(data->inputfd);
+		free(data->execcmds[1]);
+		free(data->execcmds);
+	}
+	else if (flag == 1) // if "<infile"
+	{
+		nameofinfile = malloc(sizeof(char) * ft_strlen(data->execcmds[0]));
+		i = 1;
+		j = 0;
+		while (data->execcmds[0][i])
+		{
+			nameofinfile[j] = data->execcmds[0][i];
+			i++;
+			j++;
+		}
+		nameofinfile[j] = '\0';
+		data->inputfd = open(nameofinfile, O_RDONLY);
+		dup2(data->inputfd, 0);
+		close(data->inputfd);
+		free(nameofinfile);
+		result[0] = data->execcmds[1];
+		result[1] = data->execcmds[2];
+		free(data->execcmds[0]);
+		free(data->execcmds);
+	}
+	data->execcmds = result;
+	result[2] = NULL;
+}
+
+void	redirection(t_list *data)
+{
+	//check if <infile is front or back
+	//if front remove the < infile and change the input
+	if (ft_strcmp(data->execcmds[0], "<") == 0)	//check for "<" "infile"
+		reassign(data, 0);
+	else if (data->execcmds[0][0] == '<') //check for "<infile"
+		reassign(data, 1);
+	//if back
+	//"grep" "o<" "infile"
+	//"grep" "o" "<" "infile"
+	//"grep" "o" "<infile"
+	//"grep" "o<infile"
+}
+
 void executecommands(t_list *data, char **envp, int type)
 {
     int id;
@@ -373,6 +433,8 @@ void executecommands(t_list *data, char **envp, int type)
             dup2(data->stdout, 1);
         close(data->pipefd[0]);
         close(data->pipefd[1]);
+		// check for redirection
+		redirection(data);
         execve(data->execcmds[0], data->execcmds, envp);
         perror("execve");
         exit(EXIT_FAILURE);

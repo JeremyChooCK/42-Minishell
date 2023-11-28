@@ -59,6 +59,7 @@ typedef struct s_list
 	int			stdin;
 	int			stdout;
 	int			i;
+	int			inputfd;
 	t_history	*history;
 	t_env_list	*env_vars;
 }	t_list;
