@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/27 23:11:09 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/28 19:21:03 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -569,6 +569,22 @@ int	ft_echo(char **args)
 	return (0);
 }
 
+int	ft_pwd(void)
+{
+	char	cwd[4096];
+
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+	{
+		printf("%s\n", cwd);
+		return (0);
+	}
+	else
+	{
+		perror("pwd");
+		return (1);
+	}
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -625,6 +641,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 				}
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 					checkdir(data->commandsarr[1]);
+				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+					ft_pwd();
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 					ft_display_history(data);
 				else
