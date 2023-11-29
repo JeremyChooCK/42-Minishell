@@ -71,6 +71,8 @@ char	*ft_getpath(t_list *data)
 		i++;
 	}
 	j = 0;
+	if (ft_strcmp(data->commandsarr[0], "<") == 0 || (data->commandsarr[0][0] == '<'))
+		return (ft_strdup(data->commandsarr[0]));
 	while (splitpath[j])
 		free(splitpath[j++]);
 	free(splitpath);
@@ -261,6 +263,7 @@ int	getcmd(t_list *data, char **envp)
 	int		result;
 	char	*exit_status;
 
+	temp = NULL;
     if (process_quotes(data->prompt) < 0) {
         fprintf(stderr, "Error: Unmatched quotes in command.\n");
         return -1;
@@ -293,8 +296,10 @@ int	getcmd(t_list *data, char **envp)
 			executecommands(data, envp, type);
 			data->i++;
 		}
-		dup2(data->stdin, 0);
-		dup2(data->stdout, 1);
+		dup2(data->stdin, STDIN_FILENO);
+		// printf("reset stdin : %i\n", data->stdin);
+		dup2(data->stdout, STDOUT_FILENO);
+		// printf("reset stdout : %i\n", data->stdout);
 		result = 1;
 	}
 	else
@@ -302,10 +307,11 @@ int	getcmd(t_list *data, char **envp)
 		temp = data->prompt;
 		result = 0;
 	}
-	data->commandsarr = ft_split(temp, ' ');
+	if (temp)
+		data->commandsarr = ft_split(temp, ' ');
 	if (data->commandsarr == NULL)
 	{
-		printf("Error splitting command input.\n");
+		// printf("Error splitting command input.\n");
 		return (0);
 	}
 	exit_status = getenv("?");
@@ -336,47 +342,46 @@ void remove_quotes_from_args(char **args)
 
 void	reassign(t_list *data, int flag)
 {
-	char	*nameofinfile;
+	char	*temp;
+	// char	*nameofinfile;
 	char	**result;
 	int		i;
 	int		j;
 
 	i = 0;
-	result = malloc(sizeof(char *) * 3);
+	j = 0;
+	while (data->execcmds[i])
+		i++;
 	if (flag == 0) // if "<" "infile"
 	{
-		result[0] = data->execcmds[2];
-		result[1] = data->execcmds[3];
-		free(data->execcmds[0]);
+		result = malloc(sizeof(char *) * i - 2 + 1);
+		i = 2;
+		while (data->execcmds[i])
+		{
+			result[j] = data->execcmds[i];
+			// printf("%s\n%i\n", result[j], j);
+			j++;
+			i++;
+		}
 		data->inputfd = open(data->execcmds[1], O_RDONLY);
 		dup2(data->inputfd, 0);
+		// printf("< stdin : %i\n", data->inputfd);
 		close(data->inputfd);
-		free(data->execcmds[1]);
-		free(data->execcmds);
-	}
-	else if (flag == 1) // if "<infile"
-	{
-		nameofinfile = malloc(sizeof(char) * ft_strlen(data->execcmds[0]));
-		i = 1;
-		j = 0;
-		while (data->execcmds[0][i])
-		{
-			nameofinfile[j] = data->execcmds[0][i];
-			i++;
-			j++;
-		}
-		nameofinfile[j] = '\0';
-		data->inputfd = open(nameofinfile, O_RDONLY);
-		dup2(data->inputfd, 0);
-		close(data->inputfd);
-		free(nameofinfile);
-		result[0] = data->execcmds[1];
-		result[1] = data->execcmds[2];
 		free(data->execcmds[0]);
+		free(data->execcmds[1]);
+		temp = data->commandsarr[0];
+		data->commandsarr[0] = ft_strdup(data->execcmds[2]);
+		// printf(" cmdarr[0] : %s\n", temp);
+		result[0] = ft_getpath(data);
+		// printf("path : %s\n", result[0]);
+		free(temp);
 		free(data->execcmds);
+		data->execcmds = result;
 	}
-	data->execcmds = result;
-	result[2] = NULL;
+	// else if (flag == 1) // if "<infile"
+	// {
+
+	// }
 }
 
 void	redirection(t_list *data)
@@ -419,7 +424,7 @@ void executecommands(t_list *data, char **envp, int type)
     i = 1;
     while (data->commandsarr[i])
     {
-        data->execcmds[i] = data->commandsarr[i];
+        data->execcmds[i] = ft_strdup(data->commandsarr[i]);
         i++;
     }
     data->execcmds[i] = NULL;
@@ -428,15 +433,21 @@ void executecommands(t_list *data, char **envp, int type)
     if (id == 0)
     {
         if (type == 1)
+		{
             dup2(data->pipefd[1], 1);
+			printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
+		}
         if (type == 2)
+		{
             dup2(data->stdout, 1);
+			printf("write to pipe2 stdout : %i\n", data->stdout);
+		}
         close(data->pipefd[0]);
         close(data->pipefd[1]);
 		// check for redirection
 		redirection(data);
         execve(data->execcmds[0], data->execcmds, envp);
-        perror("execve");
+        perror(data->execcmds[0]);
         exit(EXIT_FAILURE);
     }
     else
@@ -445,6 +456,7 @@ void executecommands(t_list *data, char **envp, int type)
         if (type == 1)
         {
 			dup2(data->pipefd[0], 0);
+			printf("pipe stdin : %i\n", data->pipefd[0]);
         	close(data->pipefd[0]);
 		}
         else
@@ -655,6 +667,8 @@ void	ft_display_prompt(t_list *data, char **envp)
     char	*username;
 	int		i;
 
+	dup2(data->stdin, STDIN_FILENO);
+	dup2(data->stdout, STDOUT_FILENO);
 	username = getenv("USER");
 	if (!username)
 		username = "user";
@@ -677,6 +691,7 @@ void	ft_display_prompt(t_list *data, char **envp)
         ft_strcat(dynamic_prompt, ":");
         ft_strcat(dynamic_prompt, cwd);
         ft_strcat(dynamic_prompt, "$ ");
+		// printf("current stdin : %i\n current stdout : %i", data->stdin, data->stdout)
         data->prompt = readline(dynamic_prompt);
         if (dynamic_prompt != NULL)
             free(dynamic_prompt);
@@ -804,8 +819,10 @@ int	main(int argc, char **argv, char **envp)
 	if (!argc && !argv)
 		return (0);
 	data = malloc(sizeof(t_list));
-	data->stdin = dup(0);
-	data->stdout = dup(1);
+	data->stdin = dup(STDIN_FILENO);
+	// printf("init stdin : %i\n", data->stdin);
+	data->stdout = dup(STDOUT_FILENO);
+	// printf("init stdout : %i\n", data->stdout);
 	if (!data)
 	{
 		printf("Memory allocation failed\n");
