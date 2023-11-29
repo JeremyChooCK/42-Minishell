@@ -14,6 +14,9 @@ LIBFT = ft_split.c \
 	ft_strlen.c \
 	ft_strdup.c \
 	ft_strstr.c \
+	ft_strspn.c \
+	ft_strcspn.c \
+	ft_strtok.c \
 	ft_strncpy.c \
 	ft_strcpy.c \
 	ft_isalnum.c \

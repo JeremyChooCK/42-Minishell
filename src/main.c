@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/28 19:21:03 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/29 20:43:02 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -659,13 +659,93 @@ int	ft_pwd(void)
 	}
 }
 
+void	print_env_vars(t_env_list *env_vars)
+{
+	t_env_list	*current;
+
+	current = env_vars;
+	while (current != NULL)
+    {
+        printf("declare -x %s=\"%s\"\n", current->env_var.key, current->env_var.value);
+		current = current->next;
+    }
+}
+
+int	valid_export_arg(char *arg)
+{
+	char	*equal_sign;
+
+	if (!arg)
+		return (0);
+	equal_sign = ft_strchr(arg, '=');
+	if (!equal_sign || equal_sign == arg)
+		return (0);
+	return (1);
+}
+
+void	add_or_update_env_var(char *arg, t_env_list **env_vars)
+{
+	t_env_list	*new_node;
+	t_env_list	*current;
+	char		*key;
+	char		*value;
+
+	key = ft_strtok(arg, "=");
+	value = ft_strtok(NULL, "=");
+	if (!key || !value)
+		return ;
+	current = *env_vars;
+	while (current)
+	{
+		if (ft_strcmp(current->env_var.key, key) == 0)
+		{
+            free(current->env_var.value);
+            current->env_var.value = strdup(value);
+            return ;
+        }
+        current = current->next;
+    }
+	new_node = malloc(sizeof(t_env_list));
+    if (!new_node)
+    {
+        perror("malloc");
+        return ;
+	}
+	new_node->env_var.key = ft_strdup(key);
+	new_node->env_var.value = ft_strdup(value);
+	new_node->next = *env_vars;
+	*env_vars = new_node;
+}
+
+void	custom_export(char **args, t_env_list **env_vars)
+{
+	int	i;
+
+    if (!args[0])
+    {
+        print_env_vars(*env_vars);
+        return ;
+    }
+	i = 0;
+	while (args[i] != NULL)
+    {
+        if (valid_export_arg(args[i]))
+            add_or_update_env_var(args[i], env_vars);
+        else
+            fprintf(stderr, "export: invalid argument: %s\n", args[i]);
+		i++;
+    }
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
     char	hostname[HOSTNAME_MAX];
     char	cwd[4096];
+	char	exit_status_str[4];
     char	*username;
 	int		i;
+	int		exit_code;
 
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
@@ -703,16 +783,9 @@ void	ft_display_prompt(t_list *data, char **envp)
 			add_history(data->prompt);
 			if (getcmd(data, envp) == 0)
 			{
-				if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
 				{
-					free(data->path);
-					free(data->prompt);
-					break ;
-				}
-				else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-				{
-					int exit_code = ft_echo(data->commandsarr + 1);
-					char exit_status_str[4];
+					exit_code = ft_echo(data->commandsarr + 1);
 					snprintf(exit_status_str, sizeof(exit_status_str), "%d", exit_code);
 					setenv("?", exit_status_str, 1);
 				}
@@ -720,6 +793,14 @@ void	ft_display_prompt(t_list *data, char **envp)
 					checkdir(data->commandsarr[1]);
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 					ft_pwd();
+				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+					custom_export(data->commandsarr + 1, &(data->env_vars));
+				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+				{
+					free(data->path);
+					free(data->prompt);
+					break ;
+				}
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 					ft_display_history(data);
 				else
