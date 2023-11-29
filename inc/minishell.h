@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/26 21:25:08 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/29 23:20:03 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -66,13 +66,13 @@ typedef struct s_list
 
 int		checkdir(char *path);
 int		checkempty(char *s);
-void    executecommands(t_list *data, char **envp, int type);
+void	executecommands(t_list *data, char **envp, int type);
 void	ft_add_to_history(t_list *data, char *command);
 void	ft_display_history(t_list *data);
-void    ft_display_prompt(t_list *data, char **envp);
+void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
-char    *getpath(t_list *data);
-char    *remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
-char    *removedotslash(char *s);
+char	*getpath(t_list *data);
+char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
+char	*removedotslash(char *s);
 
 #endif
