@@ -12,17 +12,24 @@ LIBFT = ft_split.c \
 	ft_strncmp.c \
 	ft_strjoin.c \
 	ft_strlen.c \
+	ft_strnlen.c \
 	ft_strdup.c \
+	ft_strndup.c \
 	ft_strstr.c \
 	ft_strncpy.c \
 	ft_strcpy.c \
 	ft_isalnum.c \
 	ft_memmove.c \
+	ft_memcpy.c \
 
-SRC = $(LIBFT) \
-	main.c
+LIBFT := $(addprefix libft/,$(LIBFT))
+
+SRC = main.c \
 
 SRC := $(addprefix src/,$(SRC))
+
+SRC := $(SRC) $(LIBFT)
+
 OBJS = $(SRC:src/%.c=$(BUILDDIR)/%.o)
 
 all: $(BUILDDIR) $(NAME)
