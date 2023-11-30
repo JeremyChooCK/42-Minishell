@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/28 19:21:03 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/11/30 19:59:50 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -659,13 +659,80 @@ int	ft_pwd(void)
 	}
 }
 
+t_env_list	*create_env_node(char *env_str)
+{
+	t_env_list	*node;
+	char		*separator;
+	int			key_len;
+
+	node = malloc(sizeof(t_env_list));
+	if (!node)
+		return (NULL);
+	separator = ft_strchr(env_str, '=');
+	if (!separator)
+		return (NULL);
+	key_len = separator - env_str;
+	node->env_var.key = ft_strndup(env_str, key_len);
+	node->env_var.value = ft_strdup(separator + 1);
+	node->next = NULL;
+	return (node);
+}
+
+void	ft_export(char *arg, t_env_list **env_list)
+{
+    char		*key;
+    char		*value;
+	char		*separator;
+    t_env_list	*current;
+
+	if (!arg || !env_list)
+		return ;
+	separator = ft_strchr(arg, '=');
+	if (!separator)
+    {
+        printf("export: Invalid argument format. Needs 'key=value'.\n");
+		return ;
+    }
+    key = ft_strndup(arg, separator - arg);
+    value = ft_strdup(separator + 1);
+    for (current = *env_list; current != NULL; current = current->next)
+    {
+        if (ft_strcmp(current->env_var.key, key) == 0)
+        {
+            free(current->env_var.value);
+            current->env_var.value = value;
+            free(key);
+            return ;
+        }
+    }
+    t_env_list *new_node = create_env_node(arg);
+    if (!new_node)
+    {
+        free(key);
+        free(value);
+        return ;
+    }
+    current = *env_list;
+    if (!current)
+        *env_list = new_node;
+    else
+    {
+        while (current->next != NULL)
+            current = current->next;
+        current->next = new_node;
+    }
+}
+
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
     char	hostname[HOSTNAME_MAX];
     char	cwd[4096];
+	char	exit_status_str[4];
     char	*username;
 	int		i;
+	int		exit_code;
 
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
@@ -703,16 +770,9 @@ void	ft_display_prompt(t_list *data, char **envp)
 			add_history(data->prompt);
 			if (getcmd(data, envp) == 0)
 			{
-				if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
 				{
-					free(data->path);
-					free(data->prompt);
-					break ;
-				}
-				else if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-				{
-					int exit_code = ft_echo(data->commandsarr + 1);
-					char exit_status_str[4];
+					exit_code = ft_echo(data->commandsarr + 1);
 					snprintf(exit_status_str, sizeof(exit_status_str), "%d", exit_code);
 					setenv("?", exit_status_str, 1);
 				}
@@ -720,6 +780,14 @@ void	ft_display_prompt(t_list *data, char **envp)
 					checkdir(data->commandsarr[1]);
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 					ft_pwd();
+				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+					ft_export(data->commandsarr[1], &(data->env_vars));
+				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+				{
+					free(data->path);
+					free(data->prompt);
+					break ;
+				}
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 					ft_display_history(data);
 				else
@@ -744,25 +812,6 @@ void	ft_display_prompt(t_list *data, char **envp)
 		free(data->path);
 		free(data->prompt);
 	}
-}
-
-t_env_list	*create_env_node(char *env_str)
-{
-	t_env_list	*node;
-	char		*separator;
-	int			key_len;
-
-	node = malloc(sizeof(t_env_list));
-	if (!node)
-		return (NULL);
-	separator = ft_strchr(env_str, '=');
-	if (!separator)
-		return (NULL);
-	key_len = separator - env_str;
-	node->env_var.key = strndup(env_str, key_len);
-	node->env_var.value = strdup(separator + 1);
-	node->next = NULL;
-	return (node);
 }
 
 void	ft_init_t_env(char **envp, t_env_list **env_list)

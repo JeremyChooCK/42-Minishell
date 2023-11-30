@@ -8,8 +8,5 @@ This repo will add some additional stuff such as pdf for convenience sake, remem
 
 ## Tester
 
-https://github.com/cacharle/minishell_test
+https://github.com/LucasKuhn/minishell_tester
 
-pip3 install minishell-test
-
-python3 -m minishell_test
