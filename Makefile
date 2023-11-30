@@ -5,32 +5,18 @@ LDFLAGS = -lreadline
 INCLUDE = inc
 BUILDDIR = build
 
-LIBFT = ft_split.c \
-	ft_strcat.c \
-	ft_strchr.c \
-	ft_strcmp.c \
-	ft_strncmp.c \
-	ft_strjoin.c \
-	ft_strlen.c \
-	ft_strnlen.c \
-	ft_strdup.c \
-	ft_strndup.c \
-	ft_strstr.c \
-	ft_strncpy.c \
-	ft_strcpy.c \
-	ft_isalnum.c \
-	ft_memmove.c \
-	ft_memcpy.c \
+LIBFT_SRC = ft_split.c ft_strcat.c ft_strchr.c ft_strcmp.c ft_strncmp.c ft_strjoin.c \
+            ft_strlen.c ft_strnlen.c ft_strdup.c ft_strndup.c ft_strstr.c \
+            ft_strncpy.c ft_strcpy.c ft_isalnum.c ft_memmove.c ft_memcpy.c
 
-LIBFT := $(addprefix libft/,$(LIBFT))
+LIBFT_SRC := $(addprefix libft/,$(LIBFT_SRC))
+LIBFT_OBJS := $(LIBFT_SRC:libft/%.c=$(BUILDDIR)/%.o)
 
-SRC = main.c \
-
+SRC = main.c
 SRC := $(addprefix src/,$(SRC))
+SRC_OBJS := $(SRC:src/%.c=$(BUILDDIR)/%.o)
 
-SRC := $(SRC) $(LIBFT)
-
-OBJS = $(SRC:src/%.c=$(BUILDDIR)/%.o)
+OBJS = $(SRC_OBJS) $(LIBFT_OBJS)
 
 all: $(BUILDDIR) $(NAME)
 
@@ -38,6 +24,9 @@ $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
 
 $(BUILDDIR)/%.o: src/%.c
+	$(CC) $(CFLAGS) -I$(INCLUDE) -c $< -o $@
+
+$(BUILDDIR)/%.o: libft/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE) -c $< -o $@
 
 $(NAME): $(OBJS)
