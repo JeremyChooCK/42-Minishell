@@ -398,7 +398,7 @@ void	reassign(t_list *data, int flag)
 		close(data->inputfd);
 		free(data->execcmds[0]);
 		temp = data->commandsarr[0];
-		data->commandsarr[0] = ft_strdup(data->execcmds[2]);
+		data->commandsarr[0] = ft_strdup(data->execcmds[1]);
 		// printf(" cmdarr[0] : %s\n", temp);
 		result[0] = ft_getpath(data);
 		// printf("path : %s\n", result[0]);
