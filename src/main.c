@@ -406,16 +406,40 @@ void	reassign(t_list *data, int flag)
 		free(data->execcmds);
 		data->execcmds = result;
 	}
+	else if (flag == 2) //"grep" "o<" "infile"
+	{
+		result = malloc(sizeof(char *) * i - 1 + 1);
+		i--;
+		while (j < i)
+		{
+			result[j] = data->execcmds[j];
+			j++;
+		}
+		data->inputfd = open(data->execcmds[j], O_RDONLY);
+		dup2(data->inputfd, 0);
+		close(data->inputfd);
+		result[j] = NULL;
+		result[j - 1][ft_strlen(result[j-1]) - 1] = '\0';
+		free(data->execcmds);
+		data->execcmds = result;
+	}
 }
 
 void	redirection(t_list *data)
 {
+	int	i;
+
+	i = 0;
+	while (data->execcmds[i])
+		i++;
 	//check if <infile is front or back
 	//if front remove the < infile and change the input
 	if (ft_strcmp(data->execcmds[0], "<") == 0)	//check for "<" "infile"
 		reassign(data, 0);
 	else if (data->execcmds[0][0] == '<') //check for "<infile"
 		reassign(data, 1);
+	else if (i > 1 && data->execcmds[i - 2][ft_strlen(data->execcmds[ i - 2]) - 1] == '<') //check if the last character of the 2nd last string in data->execcmds is '<'
+		reassign(data, 2);
 	//if back
 	//"grep" "o<" "infile"
 	//"grep" "o" "<" "infile"
