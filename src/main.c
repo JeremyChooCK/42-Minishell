@@ -363,6 +363,7 @@ void	reassign(t_list *data, int flag)
 			j++;
 			i++;
 		}
+		result[j] = NULL;
 		data->inputfd = open(data->execcmds[1], O_RDONLY);
 		dup2(data->inputfd, 0);
 		// printf("< stdin : %i\n", data->inputfd);
@@ -377,6 +378,7 @@ void	reassign(t_list *data, int flag)
 		free(temp);
 		free(data->execcmds);
 		data->execcmds = result;
+		
 	}
 	// else if (flag == 1) // if "<infile"
 	// {
@@ -435,12 +437,12 @@ void executecommands(t_list *data, char **envp, int type)
         if (type == 1)
 		{
             dup2(data->pipefd[1], 1);
-			printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
+			// printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
 		}
         if (type == 2)
 		{
             dup2(data->stdout, 1);
-			printf("write to pipe2 stdout : %i\n", data->stdout);
+			// printf("write to pipe2 stdout : %i\n", data->stdout);
 		}
         close(data->pipefd[0]);
         close(data->pipefd[1]);
@@ -456,7 +458,7 @@ void executecommands(t_list *data, char **envp, int type)
         if (type == 1)
         {
 			dup2(data->pipefd[0], 0);
-			printf("pipe stdin : %i\n", data->pipefd[0]);
+			// printf("pipe stdin : %i\n", data->pipefd[0]);
         	close(data->pipefd[0]);
 		}
         else
@@ -470,6 +472,7 @@ void executecommands(t_list *data, char **envp, int type)
 				setenv("?", exit_status, 1);
 			}
 		}
+		wait(NULL);
     }
 }
 
