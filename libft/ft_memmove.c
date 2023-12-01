@@ -6,7 +6,7 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/11/25 22:36:47 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/01 21:44:28 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -14,7 +14,7 @@
 void	*ft_memmove(void *dest, const void *src, size_t n)
 {
 	unsigned char		*d;
-    const unsigned char	*s = src;
+	const unsigned char	*s = src;
 	size_t				i;
 
 	d = dest;
