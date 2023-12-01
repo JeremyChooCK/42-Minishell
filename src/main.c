@@ -380,10 +380,32 @@ void	reassign(t_list *data, int flag)
 		data->execcmds = result;
 		
 	}
-	// else if (flag == 1) // if "<infile"
-	// {
-
-	// }
+	else if (flag == 1) // if "<infile"
+	{
+		result = malloc(sizeof(char *) * i - 1 + 1);
+		i = 1;
+		while (data->execcmds[i])
+		{
+			result[j] = data->execcmds[i];
+			// printf("%s\n%i\n", result[j], j);
+			j++;
+			i++;
+		}
+		result[j] = NULL;
+		data->inputfd = open(data->execcmds[0] + 1, O_RDONLY);
+		dup2(data->inputfd, 0);
+		// printf("< stdin : %i\n", data->inputfd);
+		close(data->inputfd);
+		free(data->execcmds[0]);
+		temp = data->commandsarr[0];
+		data->commandsarr[0] = ft_strdup(data->execcmds[2]);
+		// printf(" cmdarr[0] : %s\n", temp);
+		result[0] = ft_getpath(data);
+		// printf("path : %s\n", result[0]);
+		free(temp);
+		free(data->execcmds);
+		data->execcmds = result;
+	}
 }
 
 void	redirection(t_list *data)
