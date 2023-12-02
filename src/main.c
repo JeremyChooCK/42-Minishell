@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/02 11:20:26 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/02 11:53:42 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -795,6 +795,18 @@ void	ft_unset(char *arg, t_env_list **env_list)
     }
 }
 
+void	ft_env(t_env_list *env_vars)
+{
+	t_env_list	*current;
+
+	current = env_vars;
+	while (current != NULL)
+	{
+		printf("%s=%s\n", current->env_var.key, current->env_var.value);
+		current = current->next;
+	}
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -857,6 +869,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 					ft_export(data->commandsarr[1], &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
 					ft_unset(data->commandsarr[1], &(data->env_vars));
+				else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+					ft_env(data->env_vars);
 				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 				{
 					free(data->path);
