@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/30 19:59:50 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/02 09:07:04 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -343,7 +343,6 @@ void remove_quotes_from_args(char **args)
 void	reassign(t_list *data, int flag)
 {
 	char	*temp;
-	// char	*nameofinfile;
 	char	**result;
 	int		i;
 	int		j;
@@ -378,19 +377,13 @@ void	reassign(t_list *data, int flag)
 		free(temp);
 		free(data->execcmds);
 		data->execcmds = result;
-		
 	}
 	else if (flag == 1) // if "<infile"
 	{
 		result = malloc(sizeof(char *) * i - 1 + 1);
 		i = 1;
 		while (data->execcmds[i])
-		{
-			result[j] = data->execcmds[i];
-			// printf("%s\n%i\n", result[j], j);
-			j++;
-			i++;
-		}
+			result[j++] = data->execcmds[i++];
 		result[j] = NULL;
 		data->inputfd = open(data->execcmds[0] + 1, O_RDONLY);
 		dup2(data->inputfd, 0);
@@ -447,7 +440,7 @@ void	redirection(t_list *data)
 	//"grep" "o<infile"
 }
 
-void executecommands(t_list *data, char **envp, int type)
+void	executecommands(t_list *data, char **envp, int type)
 {
     int id;
     int i;
@@ -772,6 +765,32 @@ void	ft_export(char *arg, t_env_list **env_list)
     }
 }
 
+void	ft_unset(char *arg, t_env_list **env_list)
+{
+    t_env_list *current;
+    t_env_list *prev;
+
+    if (!arg || !env_list || !*env_list)
+        return ;
+    current = *env_list;
+    prev = NULL;
+    while (current != NULL)
+	{
+        if (ft_strcmp(current->env_var.key, arg) == 0)
+		{
+            if (prev == NULL)
+                *env_list = current->next;
+            else
+                prev->next = current->next;
+            free(current->env_var.key);
+            free(current->env_var.value);
+            free(current);
+            return ;
+        }
+        prev = current;
+        current = current->next;
+    }
+}
 
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
@@ -831,6 +850,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 					ft_pwd();
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 					ft_export(data->commandsarr[1], &(data->env_vars));
+				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+					ft_unset(data->commandsarr[1], &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 				{
 					free(data->path);
@@ -922,10 +943,7 @@ int	main(int argc, char **argv, char **envp)
 	data->stdout = dup(STDOUT_FILENO);
 	// printf("init stdout : %i\n", data->stdout);
 	if (!data)
-	{
-		printf("Memory allocation failed\n");
-		return (1);
-	}
+		return(printf("Memory allocation failed\n"), 1);
 	ft_init_t_env(envp, &(data->env_vars));
 	ft_display_prompt(data, envp);
 	if (data != NULL)
