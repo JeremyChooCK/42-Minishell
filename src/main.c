@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/02 09:07:04 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/02 11:20:26 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -160,48 +160,51 @@ void	replace_exit_status(char **command, char *exit_status)
 
 char	*expand_env_variables(char *command)
 {
-    char *result;
-    char *temp;
-    char *start;
-    char *end;
-    char var_name[256];
-    char *var_value;
-    int in_single_quote = 0;
-    int in_double_quote = 0;
+	const char	*p = command;
+	char		*result;
+	char		*temp;
+	int			in_single_quote;
+	int			in_double_quote;
 
-    result = malloc(ft_strlen(command) + 1);
-    if (!result)
-        return (NULL);
-    temp = result;
-    start = command;
-    while (*start)
-    {
-        if (*start == '\'')
-            in_single_quote = !in_single_quote;
-        else if (*start == '\"')
-            in_double_quote = !in_double_quote;
-
-        if (*start == '$' && !in_single_quote)
-        {
-            start++;
-            end = start;
-            while (ft_isalnum(*end) || *end == '_')
-                end++;
-            ft_strncpy(var_name, start, end - start);
-            var_name[end - start] = '\0';
-            var_value = getenv(var_name);
-            if (var_value)
-            {
-                ft_strcpy(temp, var_value);
-                temp += ft_strlen(var_value);
+	result = malloc(ft_strlen(command) + 1);
+	if (!result)
+		return (NULL);
+	temp = result;
+	in_single_quote = 0;
+	in_double_quote = 0;
+	while (*p)
+	{
+		p++;
+		if (*p == '\'')
+			in_single_quote = !in_single_quote;
+		else if (*p == '\"')
+			in_double_quote = !in_double_quote;
+		if (*p == '$' && !in_single_quote)
+		{
+			char var_name[256] = {0};
+            const char *end = p + 1;
+			while (ft_isalnum((unsigned char)*end) || *end == '_')
+				end++;
+			ft_strncpy(var_name, p + 1, ft_min(end - p - 1, sizeof(var_name) - 1));
+            char *var_value = getenv(var_name);
+            if (var_value) {
+                size_t len = strlen(var_value);
+                char *new_result = realloc(result, (temp - result) + len + strlen(end) + 1);
+                if (!new_result) {
+                    free(result);
+                    return NULL;
+                }
+                result = new_result;
+                strcpy(temp, var_value);
+                temp += len;
             }
-            start = end;
+            p = end - 1;
+        } else {
+            *temp++ = *p;
         }
-        else
-            *temp++ = *start++;
     }
     *temp = '\0';
-    return (result);
+    return result;
 }
 
 void	process_command(char **command)
@@ -826,10 +829,12 @@ void	ft_display_prompt(t_list *data, char **envp)
         ft_strcat(dynamic_prompt, ":");
         ft_strcat(dynamic_prompt, cwd);
         ft_strcat(dynamic_prompt, "$ ");
-		// printf("current stdin : %i\n current stdout : %i", data->stdin, data->stdout)
         data->prompt = readline(dynamic_prompt);
         if (dynamic_prompt != NULL)
-            free(dynamic_prompt);
+		{
+			free(dynamic_prompt);
+			dynamic_prompt = NULL;
+		}
 		if (!data->prompt)
 			break ;
 		if (checkempty(data->prompt) == 0)
@@ -855,7 +860,11 @@ void	ft_display_prompt(t_list *data, char **envp)
 				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 				{
 					free(data->path);
-					free(data->prompt);
+					if (data->prompt != NULL)
+					{
+						free(data->prompt);
+						data->prompt = NULL;
+					}
 					break ;
 				}
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
@@ -873,14 +882,22 @@ void	ft_display_prompt(t_list *data, char **envp)
 					else
 						printf("Command not found: %s\n", data->commandsarr[0]);
 					i = 0;
-					while (data->commandsarr[i])
-						free(data->commandsarr[i++]);
+					while (data->commandsarr[i] != NULL)
+					{
+						free(data->commandsarr[i]);
+						data->commandsarr[i] = NULL;
+						i++;
+					}
 					free(data->commandsarr);
 				}
 			}
 		}
 		free(data->path);
-		free(data->prompt);
+		if (data->prompt != NULL)
+		{
+			free(data->prompt);
+			data->prompt = NULL;
+		}
 	}
 }
 
