@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/03 10:50:16 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/03 11:33:07 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -133,46 +133,45 @@ int	checkforpipe(char *s)
 	return (num);
 }
 
-char	*str_replace(char *orig, char *rep, char *with)
-{
-	char	*result;
-    char	*ins;
-    char	*tmp;
-    int		len_rep;
-    int		len_with;
-    int		len_front;
-    int		count;
+int count_substring(const char *orig, const char *rep) {
+    int count = 0;
+    const char *tmp = orig;
+    int len_rep = ft_strlen(rep);
 
-    if (!orig || !rep)
-        return (NULL);
-    len_rep = ft_strlen(rep);
-    if (len_rep == 0)
-        return (NULL);
-    if (!with)
-        with = "";
-    len_with = ft_strlen(with);
-    ins = orig;
-	count = 0;
-	tmp = ft_strstr(ins, rep);
-	while (tmp)
-	{
-		++count;
-        ins = tmp + len_rep;
-		tmp = ft_strstr(ins, rep);
+    while ((tmp = ft_strstr(tmp, rep)) != NULL) {
+        count++;
+        tmp += len_rep;
     }
-    tmp = result = malloc(ft_strlen(orig) + (len_with - len_rep) * count + 1);
-    if (!result)
-        return (NULL);
-    while (count--)
-	{
-        ins = ft_strstr(orig, rep);
-        len_front = ins - orig;
+
+    return count;
+}
+
+char *perform_replacement(const char *orig, const char *rep, const char *with, int count) {
+    int len_rep = ft_strlen(rep);
+    int len_with = ft_strlen(with);
+    char *result = malloc(ft_strlen(orig) + (len_with - len_rep) * count + 1);
+    char *tmp;
+
+    if (!result) return NULL;
+
+    tmp = result;
+    while (count--) {
+        const char *ins = ft_strstr(orig, rep);
+        int len_front = ins - orig;
         tmp = ft_strncpy(tmp, orig, len_front) + len_front;
         tmp = ft_strcpy(tmp, with) + len_with;
         orig += len_front + len_rep;
     }
     ft_strcpy(tmp, orig);
-    return (result);
+    return result;
+}
+
+char *str_replace(char *orig, char *rep, char *with) {
+    if (!orig || !rep || ft_strlen(rep) == 0) return NULL;
+    if (!with) with = "";
+
+    int count = count_substring(orig, rep);
+    return perform_replacement(orig, rep, with, count);
 }
 
 void	replace_exit_status(char **command, char *exit_status)
