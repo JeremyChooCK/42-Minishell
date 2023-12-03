@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/03 10:18:31 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/03 10:50:16 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -39,46 +39,80 @@ void	ft_setup_signal_handlers(void)
 	sigaction(SIGQUIT, &sa, NULL);
 }
 
-// TODO need to refactor ft_getpath without breaking it.
-char    *ft_getpath(t_list *data)
+char	**split_and_validate_path(char *path)
 {
-    char    **splitpath;
-    char    *path;
-    char    *temp;
-    char    *joinedpath;
-    int     i;
-    int     j;
+	char	**splitpath;
 
-    i = 0;
-    path = getenv("PATH");
-    if (path == NULL)
-        path = "/usr/local/bin:/usr/bin:/bin";
-    splitpath = ft_split(path, ':');
-    if (!splitpath)
-        return (NULL);
-    while (splitpath[i] != NULL)
-    {
-        temp = ft_strjoin(splitpath[i], "/");
-        joinedpath = ft_strjoin(temp, data->commandsarr[0]);
-        free(temp);
-        if (access(joinedpath, X_OK) == 0)
-        {
-            while (splitpath[i])
-                free(splitpath[i++]);
-            free(splitpath);
-            return (joinedpath);
-        }
-        free(joinedpath);
-        i++;
-    }
-    j = 0;
-    if (ft_strcmp(data->commandsarr[0], "<") == 0
-        || (data->commandsarr[0][0] == '<'))
-        return (ft_strdup(data->commandsarr[0]));
-    while (splitpath[j])
-        free(splitpath[j++]);
-    free(splitpath);
-    return (NULL);
+	if (path == NULL)
+		path = "/usr/local/bin:/usr/bin:/bin";
+	splitpath = ft_split(path, ':');
+	return (splitpath);
+}
+
+char	*join_paths_and_check_access(char **splitpath, t_list *data)
+{
+	char	*temp;
+	char	*joinedpath;
+	int		i;
+
+	i = 0;
+	while (splitpath[i] != NULL)
+	{
+		temp = ft_strjoin(splitpath[i], "/");
+		joinedpath = ft_strjoin(temp, data->commandsarr[0]);
+		free(temp);
+		if (access(joinedpath, X_OK) == 0)
+			return (joinedpath);
+		free(joinedpath);
+		i++;
+	}
+	return (NULL);
+}
+
+char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
+{
+	int	j;
+
+	j = 0;
+	if (ft_strcmp(data->commandsarr[0], "<") == 0
+		|| data->commandsarr[0][0] == '<')
+		return (ft_strdup(data->commandsarr[0]));
+	while (splitpath[j])
+		free(splitpath[j++]);
+	free(splitpath);
+	return (NULL);
+}
+
+void	free_splitpath(char **splitpath)
+{
+	int	i;
+
+	i = 0;
+	if (splitpath != NULL)
+	{
+		while (splitpath[i])
+			free(splitpath[i++]);
+		free(splitpath);
+	}
+}
+
+char	*ft_getpath(t_list *data)
+{
+	char	**splitpath;
+	char	*joinedpath;
+	char	*path;
+
+	path = getenv("PATH");
+	splitpath = split_and_validate_path(path);
+	if (!splitpath)
+		return (NULL);
+	joinedpath = join_paths_and_check_access(splitpath, data);
+	if (joinedpath)
+	{
+		free_splitpath(splitpath);
+		return (joinedpath);
+	}
+	return (handle_special_cases_and_cleanup(splitpath, data));
 }
 
 int	checkforpipe(char *s)
