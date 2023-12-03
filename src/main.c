@@ -6,77 +6,79 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/02 11:53:42 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/03 10:18:31 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-char	*dynamic_prompt = NULL;
+char	*g_prompt = NULL;
 
-void	sigint_handler(int sig)
+void	ft_sigint_handler(int sig)
 {
 	(void)sig;
-    if (dynamic_prompt != NULL)
-        printf("\n%s", dynamic_prompt);
-    else
-        printf("\nminishell> ");
+	if (g_prompt != NULL)
+		printf("\n%s", g_prompt);
+	else
+		printf("\nminishell> ");
 }
 
-void	sigquit_handler(int sig)
+void	ft_sigquit_handler(int sig)
 {
 	(void)sig;
 }
 
-void	setup_signal_handlers(void)
+void	ft_setup_signal_handlers(void)
 {
 	struct sigaction	sa;
 
-	sa.sa_handler = sigint_handler;
+	sa.sa_handler = ft_sigint_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;
 	sigaction(SIGINT, &sa, NULL);
-	sa.sa_handler = sigquit_handler;
+	sa.sa_handler = ft_sigquit_handler;
 	sigaction(SIGQUIT, &sa, NULL);
 }
 
-char	*ft_getpath(t_list *data)
+// TODO need to refactor ft_getpath without breaking it.
+char    *ft_getpath(t_list *data)
 {
-	char	**splitpath;
-	char	*path;
-	char	*temp;
-	char	*joinedpath;
-	int		i;
-	int		j;
+    char    **splitpath;
+    char    *path;
+    char    *temp;
+    char    *joinedpath;
+    int     i;
+    int     j;
 
-	i = 0;
-	path = getenv("PATH");
-	if (path == NULL)
-		path = "/usr/local/bin:/usr/bin:/bin";
-	splitpath = ft_split(path, ':');
-	if (!splitpath)
-		return (NULL);
-	while (splitpath[i] != NULL)
-	{
-		temp = ft_strjoin(splitpath[i], "/");
-		joinedpath = ft_strjoin(temp, data->commandsarr[0]);
-		free(temp);
-		if (access(joinedpath, X_OK) == 0)
-		{
-			while (splitpath[i])
-				free(splitpath[i++]);
-			free(splitpath);
-			return (joinedpath);
-		}
-		free(joinedpath);
-		i++;
-	}
-	j = 0;
-	if (ft_strcmp(data->commandsarr[0], "<") == 0 || (data->commandsarr[0][0] == '<'))
-		return (ft_strdup(data->commandsarr[0]));
-	while (splitpath[j])
-		free(splitpath[j++]);
-	free(splitpath);
-	return (NULL);
+    i = 0;
+    path = getenv("PATH");
+    if (path == NULL)
+        path = "/usr/local/bin:/usr/bin:/bin";
+    splitpath = ft_split(path, ':');
+    if (!splitpath)
+        return (NULL);
+    while (splitpath[i] != NULL)
+    {
+        temp = ft_strjoin(splitpath[i], "/");
+        joinedpath = ft_strjoin(temp, data->commandsarr[0]);
+        free(temp);
+        if (access(joinedpath, X_OK) == 0)
+        {
+            while (splitpath[i])
+                free(splitpath[i++]);
+            free(splitpath);
+            return (joinedpath);
+        }
+        free(joinedpath);
+        i++;
+    }
+    j = 0;
+    if (ft_strcmp(data->commandsarr[0], "<") == 0
+        || (data->commandsarr[0][0] == '<'))
+        return (ft_strdup(data->commandsarr[0]));
+    while (splitpath[j])
+        free(splitpath[j++]);
+    free(splitpath);
+    return (NULL);
 }
 
 int	checkforpipe(char *s)
@@ -829,23 +831,23 @@ void	ft_display_prompt(t_list *data, char **envp)
         hostname[8] = '\0';
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             ft_strncpy(cwd, "unknown", sizeof(cwd));
-		dynamic_prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
-        if (!dynamic_prompt)
+		g_prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
+        if (!g_prompt)
 		{
             perror("malloc");
             exit(1);
 		}
-        ft_strcpy(dynamic_prompt, username);
-        ft_strcat(dynamic_prompt, "@");
-        ft_strcat(dynamic_prompt, hostname);
-        ft_strcat(dynamic_prompt, ":");
-        ft_strcat(dynamic_prompt, cwd);
-        ft_strcat(dynamic_prompt, "$ ");
-        data->prompt = readline(dynamic_prompt);
-        if (dynamic_prompt != NULL)
+        ft_strcpy(g_prompt, username);
+        ft_strcat(g_prompt, "@");
+        ft_strcat(g_prompt, hostname);
+        ft_strcat(g_prompt, ":");
+        ft_strcat(g_prompt, cwd);
+        ft_strcat(g_prompt, "$ ");
+        data->prompt = readline(g_prompt);
+        if (g_prompt != NULL)
 		{
-			free(dynamic_prompt);
-			dynamic_prompt = NULL;
+			free(g_prompt);
+			g_prompt = NULL;
 		}
 		if (!data->prompt)
 			break ;
@@ -965,7 +967,7 @@ int	main(int argc, char **argv, char **envp)
 {
 	t_list	*data;
 
-	setup_signal_handlers();
+	ft_setup_signal_handlers();
 	if (!argc && !argv)
 		return (0);
 	data = malloc(sizeof(t_list));
