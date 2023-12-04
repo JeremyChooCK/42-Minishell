@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/11/29 23:20:03 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/04 20:48:56 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -29,6 +29,7 @@
 # include <readline/history.h>
 
 # define HOSTNAME_MAX 256
+# define VAR_NAME_SIZE 256
 
 typedef struct s_env_var
 {

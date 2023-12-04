@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/04 20:24:39 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/04 21:20:02 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -197,63 +197,82 @@ void	replace_exit_status(char **command, char *exit_status)
 	i = 0;
 	while (command[i] != NULL)
 	{
-        new_command = str_replace(command[i], "$?", exit_status);
-        if (new_command != NULL) {
-            temp = command[i];
-            command[i] = new_command;
-            free(temp);
-        }
-        i++;
-    }
+		new_command = str_replace(command[i], "$?", exit_status);
+		if (new_command != NULL)
+		{
+			temp = command[i];
+			command[i] = new_command;
+			free(temp);
+		}
+		i++;
+	}
+}
+
+int	toggle_quote_state(int quote_state, char current_char)
+{
+	if (current_char == '\'' || current_char == '\"')
+		return (!quote_state);
+	return (quote_state);
+}
+
+char	*process_env_var(char **p, char *result, char *temp)
+{
+	char	var_name[VAR_NAME_SIZE];
+	char	*end;
+	char	*var_value;
+	size_t	len;
+
+	ft_bzero(var_name, VAR_NAME_SIZE);
+	end = *p + 1;
+	while (ft_isalnum((unsigned char)*end) || *end == '_')
+		end++;
+	ft_strncpy(var_name, *p + 1, ft_min(end - *p - 1, VAR_NAME_SIZE - 1));
+	var_value = getenv(var_name);
+	if (var_value)
+	{
+		len = ft_strlen(var_value);
+		temp = realloc(result, (temp - result) + len + ft_strlen(end) + 1);
+		if (!temp)
+		{
+			free(result);
+			return (NULL);
+		}
+		ft_strcpy(temp, var_value);
+		temp += len;
+	}
+	*p = end - 1;
+	return (temp);
 }
 
 char	*expand_env_variables(char *command)
 {
-	const char	*p = command;
-	char		*result;
-	char		*temp;
-	int			in_single_quote;
-	int			in_double_quote;
+	char	*result;
+	char	*temp;
+	int		in_single_quote;
+	int		in_double_quote;
 
-	result = malloc(ft_strlen(command) + 1);
+	result = ft_strnew(ft_strlen(command));
 	if (!result)
 		return (NULL);
 	temp = result;
 	in_single_quote = 0;
 	in_double_quote = 0;
-	while (*p)
+	while (*command)
 	{
-		p++;
-		if (*p == '\'')
-			in_single_quote = !in_single_quote;
-		else if (*p == '\"')
-			in_double_quote = !in_double_quote;
-		if (*p == '$' && !in_single_quote)
+		command++;
+		in_single_quote = toggle_quote_state(in_single_quote, *command);
+		in_double_quote = toggle_quote_state(in_double_quote, *command);
+		if (*command == '$' && !in_single_quote)
 		{
-			char var_name[256] = {0};
-            const char *end = p + 1;
-			while (ft_isalnum((unsigned char)*end) || *end == '_')
-				end++;
-			ft_strncpy(var_name, p + 1, ft_min(end - p - 1, sizeof(var_name) - 1));
-            char *var_value = getenv(var_name);
-            if (var_value) {
-                size_t len = strlen(var_value);
-                char *new_result = realloc(result, (temp - result) + len + strlen(end) + 1);
-                if (!new_result) {
-                    free(result);
-                    return NULL;
-                }
-                result = new_result;
-                strcpy(temp, var_value);
-                temp += len;
-            }
-            p = end - 1;
-        } else {
-            *temp++ = *p;
-        }
-    }
-    *temp = '\0';
-    return result;
+			temp = process_env_var(&command, result, temp);
+			if (!temp)
+				return (NULL);
+		}
+		else
+			*temp++ = *command;
+	}
+	*temp = '\0';
+	return (result);
 }
 
 void	process_command(char **command)
@@ -261,11 +280,11 @@ void	process_command(char **command)
 	char	*expanded_cmd;
 
 	expanded_cmd = expand_env_variables(*command);
-    if (expanded_cmd)
-    {
-        free(*command);
-        *command = expanded_cmd;
-    }
+	if (expanded_cmd)
+	{
+		free(*command);
+		*command = expanded_cmd;
+	}
 }
 
 int process_quotes(char *cmd_line)
