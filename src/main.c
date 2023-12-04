@@ -327,7 +327,7 @@ int	getcmd(t_list *data, char **envp)
 		strarr = ft_split(data->prompt, '|');
 		while (data->i < numofpipes + 1)
 		{
-			// process_command(&strarr[data->i]);
+			process_command(&strarr[data->i]);
 			data->commandsarr = ft_split(strarr[data->i], ' ');
 			data->path = ft_getpath(data);
 			if (data->i == numofpipes)
@@ -379,127 +379,13 @@ void remove_quotes_from_args(char **args)
     }
 }
 
-// void	reassign(t_list *data, int flag)
-// {
-// 	char	*temp;
-// 	char	**result;
-// 	int		i;
-// 	int		j;
-
-// 	i = 0;
-// 	j = 0;
-// 	while (data->execcmds[i])
-// 		i++;
-// 	if (flag == 0) // if "<" "infile"
-// 	{
-// 		result = malloc(sizeof(char *) * i - 2 + 1);
-// 		i = 2;
-// 		while (data->execcmds[i])
-// 		{
-// 			result[j] = data->execcmds[i];
-// 			// printf("%s\n%i\n", result[j], j);
-// 			j++;
-// 			i++;
-// 		}
-// 		result[j] = NULL;
-// 		data->inputfd = open(data->execcmds[1], O_RDONLY);
-// 		dup2(data->inputfd, 0);
-// 		// printf("< stdin : %i\n", data->inputfd);
-// 		close(data->inputfd);
-// 		free(data->execcmds[0]);
-// 		free(data->execcmds[1]);
-// 		temp = data->commandsarr[0];
-// 		data->commandsarr[0] = ft_strdup(data->execcmds[2]);
-// 		// printf(" cmdarr[0] : %s\n", temp);
-// 		result[0] = ft_getpath(data);
-// 		// printf("path : %s\n", result[0]);
-// 		free(temp);
-// 		free(data->execcmds);
-// 		data->execcmds = result;
-// 	}
-// 	else if (flag == 1) // if "<infile"
-// 	{
-// 		result = malloc(sizeof(char *) * i - 1 + 1);
-// 		i = 1;
-// 		while (data->execcmds[i])
-// 			result[j++] = data->execcmds[i++];
-// 		result[j] = NULL;
-// 		data->inputfd = open(data->execcmds[0] + 1, O_RDONLY);
-// 		dup2(data->inputfd, 0);
-// 		// printf("< stdin : %i\n", data->inputfd);
-// 		close(data->inputfd);
-// 		free(data->execcmds[0]);
-// 		temp = data->commandsarr[0];
-// 		data->commandsarr[0] = ft_strdup(data->execcmds[1]);
-// 		// printf(" cmdarr[0] : %s\n", temp);
-// 		result[0] = ft_getpath(data);
-// 		// printf("path : %s\n", result[0]);
-// 		free(temp);
-// 		free(data->execcmds);
-// 		data->execcmds = result;
-// 	}
-// 	else if (flag == 2)// "grep" "o" "<" "infile"
-// 	{
-// 		result = malloc(sizeof(char *) * i - 2 + 1);
-// 		i -= 2;
-// 		while (j < i)
-// 		{
-// 			result[j] = data->execcmds[j];
-// 			j++;
-// 		}
-// 		data->inputfd = open(data->execcmds[j + 1], O_RDONLY);
-// 		dup2(data->inputfd, 0);
-// 		close(data->inputfd);
-// 		result[j] = NULL;
-// 		free(data->execcmds);
-// 		data->execcmds = result;
-// 	}
-// 	else if (flag == 3) //"grep" "o<" "infile"
-// 	{
-// 		result = malloc(sizeof(char *) * i - 1 + 1);
-// 		i--;
-// 		while (j < i)
-// 		{
-// 			result[j] = data->execcmds[j];
-// 			j++;
-// 		}
-// 		data->inputfd = open(data->execcmds[j], O_RDONLY);
-// 		dup2(data->inputfd, 0);
-// 		close(data->inputfd);
-// 		result[j] = NULL;
-// 		result[j - 1][ft_strlen(result[j-1]) - 1] = '\0';
-// 		free(data->execcmds);
-// 		data->execcmds = result;
-// 	}
-// 	else if (flag == 4)//"grep" "o" "<infile"
-// 	{
-// 		result = malloc(sizeof(char *) * i - 1 + 1);
-// 		i--;
-// 		while (j < i)
-// 		{
-// 			result[j] = data->execcmds[j];
-// 			j++;
-// 		}
-// 		data->inputfd = open(data->execcmds[i] + 1, O_RDONLY);
-// 		dup2(data->inputfd, 0);
-// 		close(data->inputfd);
-// 		result[j] = NULL;
-// 		free(data->execcmds[i]);
-// 		free(data->execcmds);
-// 		data->execcmds = result;
-// 	}
-// 	else if (flag == 5)//"grep" "o<infile"
-// 	{
-		
-// 	}
-// }
-
 void reassign(t_list *data, int flag, int index)
 {
 	int		i;
 	int		j;
 	char 	*s;
 	char	*temp;
+	char	**result;
 
 	i = 0;
 	j = 0;
@@ -562,44 +448,146 @@ void reassign(t_list *data, int flag, int index)
 			free(temp);
 		}
 	}
+	else if (flag == 1)
+	{
+		while (data->execcmds[index][i] != '<')
+			i++;
+		// use s to store flags
+		s = malloc(sizeof(char) * i + 1);
+		while (j < i)
+		{
+			s[j] = data->execcmds[index][j];
+			j++;
+		}
+		s[j] = '\0';
+		if (s[0] == '\0') // if no flags
+		{
+			free(s);
+			i++;
+			j = i;
+			while (data->execcmds[index][j] && data->execcmds[index][j] != '>')
+				j++;
+			s = malloc(sizeof(char) * (j - i) + 1);
+			j = 0;
+			while (data->execcmds[index][i] && data->execcmds[index][i] != '>')
+			{
+				s[j] = data->execcmds[index][i];
+				j++;
+				i++;
+			}
+			s[j] = '\0';
+			data->inputfd = open(s, O_RDONLY);
+			dup2(data->inputfd, 0);
+			close(data->inputfd);
+			free(s);
+			if (data->execcmds[index][j + 1])
+			{
+				i = 0;
+				while(data->execcmds[index][j + i + 1])
+					i++;
+				s = malloc(sizeof(char) * i + 1);
+				i = 0;
+				while(data->execcmds[index][j + i + 1])
+				{
+					s[i] = data->execcmds[index][j + i + 1];
+					i++;
+				}
+				s[i] = '\0';
+				free(data->execcmds[index]);
+				data->execcmds[index] = s;
+				while(data->execcmds[index])
+					index++;
+			}
+			else
+			{
+				free(data->execcmds[index]);
+				while (data->execcmds[index + 1])
+				{
+					data->execcmds[index] = data->execcmds[index + 1];
+					index++;
+				}
+			}
+			data->execcmds[index] = NULL;
+			temp = data->commandsarr[0];
+			data->commandsarr[0] = data->execcmds[0];
+			free(temp);
+			if (!(access(ft_getpath(data), X_OK))) // if cant access then get path
+			{
+				data->execcmds[0] = ft_getpath(data);
+			}
+			// printf("execcmds[0] : %s\n", data->execcmds[0]);
+			// printf("execcmds[1] : %s\n", data->execcmds[1]);
+			// printf("execcmds[2] : %s\n", data->execcmds[2]);
+		}
+		else
+		{
+			j = 0;
+			while(data->execcmds[index][i + j + 1] && data->execcmds[index][i + j + 1] != '>')
+				j++;
+			temp = malloc(sizeof(char) * j + 1);
+			j = 0;
+			while(data->execcmds[index][i + j + 1] && data->execcmds[index][i + j + 1] != '>')
+			{
+				temp[j] = data->execcmds[index][i + j + 1];
+				j++;
+			}
+			temp[j] = '\0';
+			data->inputfd = open(temp, O_RDONLY);
+			dup2(data->inputfd, 0);
+			close(data->inputfd);
+			free(temp);
+			if (data->execcmds[index][i + j + 1])
+			{
+				i = 0;
+				while (data->execcmds[i])
+					i++;
+				result = malloc(sizeof(char *) * i + 1 + 1);
+				result[i + 1] = NULL;
+				i = 0;
+				while (i < index)
+				{
+					result[i] = data->execcmds[i];
+					i++;
+				}
+				result[i] = s;
+				result[i + 1] = ft_strdup(data->execcmds[index] + j + 1 + ft_strlen(s));
+				free(data->execcmds[index]);
+				free(data->execcmds);
+				data->execcmds = result;
+			}
+			else
+			{
+				free(data->execcmds[index]);
+				data->execcmds[index] = s;
+			}
+		}
+	}
 }
 
-void	redirection(t_list *data)
+void	inputredirection(t_list *data)
 {
 	int	i;
-	// int	j;
+	int	j;
 
 	i = 0;
-	// while (data->execcmds[i])
-	// 	i++;
-	// //check if <infile is front or back
-	// //if front remove the < infile and change the input
-	// if (ft_strcmp(data->execcmds[0], "<") == 0)	//check for "<" "infile"
-	// 	reassign(data, 0);
-	// else if (data->execcmds[0][0] == '<') //check for "<infile"
-	// 	reassign(data, 1);
-	// else if (i > 1 && ft_strcmp(data->execcmds[i - 2], "<") == 0)//"grep" "o" "<" "infile"
-	// 	reassign(data, 2);
-	// else if (i > 1 && data->execcmds[i - 2][ft_strlen(data->execcmds[i - 2]) - 1] == '<') //check if the last character of the 2nd last string in data->execcmds is '<'
-	// 	reassign(data, 3);//"grep" "o<" "infile"
-	// else if (i > 1 && data->execcmds[i - 1][0] == '<')//"grep" "o" "<infile"
-	// 	reassign(data, 4);	
-	// else //"grep" "o<infile"
-	// {
-	// 	j = 0;
-	// 	while (data->execmds[i - 1][j])
-	// 	{
-	// 		if (data->execcmds[i - 1][j] == '<')
-	// 			reassign(data, 5);
-	// 		j++;
-	// 	}
-	// }
-	//
-	// check for <
+	j = 0;
 	while (data->execcmds[i])
 	{
 		if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
+		{
 			reassign(data, 0, i);
+			return ;
+		}
+		j = 0;
+		while (data->execcmds[i][j])
+		{
+			if (data->execcmds[i][j] == '<') //check for "grep" "o" "<infile" or "grep" "o<" "infile" or "grep" "o" "<infile" or "grep" "o<infile"
+			{
+				reassign(data, 1, i);
+				return ;
+			}
+			j++;
+		}
 		i++;
 	}
 	
@@ -651,8 +639,8 @@ void	executecommands(t_list *data, char **envp, int type)
 		// todo : add in check for > redirect here
         close(data->pipefd[0]);
         close(data->pipefd[1]);
-		// check for redirection
-		redirection(data);
+		// check for input redirection
+		inputredirection(data);
         execve(data->execcmds[0], data->execcmds, envp);
         perror(data->execcmds[0]);
         exit(EXIT_FAILURE);
