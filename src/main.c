@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/03 13:06:15 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/04 20:24:39 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -135,16 +135,18 @@ int	checkforpipe(char *s)
 
 int	count_substring(const char *orig, const char *rep)
 {
-	const char *current = orig;
-	int count = 0;
-	int length_rep = ft_strlen(rep);
+	const char	*current = orig;
+	int			count;
+	int			length_rep;
 
 	count = 0;
 	length_rep = ft_strlen(rep);
-	while ((current = ft_strstr(current, rep)) != NULL)
+	current = ft_strstr(current, rep);
+	while (current != NULL)
 	{
 		count++;
 		current += length_rep;
+		current = ft_strstr(current, rep);
 	}
 	return (count);
 }
@@ -152,26 +154,26 @@ int	count_substring(const char *orig, const char *rep)
 char	*perform_replacement(
 	const char *orig, const char *rep, const char *with, int count)
 {
-	int length_rep = ft_strlen(rep);
-	int length_with = ft_strlen(with);
-	char *result;
-	char *result_tmp;
-	const char *insert_point;
+	int			length_front;
+	char		*result;
+	char		*result_tmp;
+	const char	*insert_point;
 
-	result = malloc(ft_strlen(orig) + (length_with - length_rep) * count + 1);
+	result = malloc(
+			ft_strlen(orig) + (ft_strlen(with) - ft_strlen(rep)) * count + 1);
 	if (!result)
-		return NULL;
+		return (NULL);
 	result_tmp = result;
 	while (count--)
 	{
 		insert_point = ft_strstr(orig, rep);
-		int length_front = insert_point - orig;
+		length_front = insert_point - orig;
 		result_tmp = ft_strncpy(result_tmp, orig, length_front) + length_front;
-		result_tmp = ft_strcpy(result_tmp, with) + length_with;
-		orig += length_front + length_rep;
+		result_tmp = ft_strcpy(result_tmp, with) + ft_strlen(with);
+		orig += length_front + ft_strlen(rep);
 	}
 	ft_strcpy(result_tmp, orig);
-	return result;
+	return (result);
 }
 
 char	*str_replace(char *orig, char *rep, char *with)
@@ -179,11 +181,11 @@ char	*str_replace(char *orig, char *rep, char *with)
 	int	count;
 
 	if (!orig || !rep || ft_strlen(rep) == 0)
-		return NULL;
+		return (NULL);
 	if (!with)
 		with = "";
 	count = count_substring(orig, rep);
-	return perform_replacement(orig, rep, with, count);
+	return (perform_replacement(orig, rep, with, count));
 }
 
 void	replace_exit_status(char **command, char *exit_status)
