@@ -102,6 +102,7 @@ char	*ft_getpath(t_list *data)
 	char	*joinedpath;
 	char	*path;
 
+	inputredirection(data);
 	path = getenv("PATH");
 	splitpath = split_and_validate_path(path);
 	if (!splitpath)
@@ -594,6 +595,43 @@ void reassign(t_list *data, int flag, int index)
 			}
 		}
 	}
+	else if (flag == 2)
+	{
+		while (data->commandsarr[i])
+			i++;
+		result = malloc(sizeof(char *) * (i + 1 + 1));
+		while (j <= index)
+		{
+			result[j] = data->commandsarr[j];
+			j++;
+		}
+		i = 0;
+		while (data->commandsarr[index][i] != '<')
+			i++;
+		j = 0;
+		while (data->commandsarr[index][i + j])
+			j++;
+		s = malloc(sizeof(char) * j + 1);
+		j = 0;
+		while (data->commandsarr[index][i + j])
+		{
+			s[j] = data->commandsarr[index][i + j];
+			j++;
+		}
+		s[j] = '\0';
+		result[index][i] = '\0';
+		index++;
+		result[index] = s;
+		index++;
+		while (data->commandsarr[index - 1])
+		{
+			result[index] = data->commandsarr[index - 1];
+			index++;
+		}
+		result[index] = NULL;
+		free(data->commandsarr);
+		data->commandsarr = result;
+	}
 }
 
 void	inputredirection(t_list *data)
@@ -603,24 +641,43 @@ void	inputredirection(t_list *data)
 
 	i = 0;
 	j = 0;
-	while (data->execcmds[i])
+	if (data->execcmds == NULL)
 	{
-		if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
+		while (data->commandsarr[i])
 		{
-			reassign(data, 0, i);
-			return ;
-		}
-		j = 0;
-		while (data->execcmds[i][j])
-		{
-			if (data->execcmds[i][j] == '<') //check for "grep" "o" "<infile" or "grep" "o<" "infile" or "grep" "o" "<infile" or "grep" "o<infile"
+			while (data->commandsarr[i][j])
 			{
-				reassign(data, 1, i);
+				if (data->commandsarr[i][j] == '<' && j != 0)
+				{
+					reassign(data, 2, i);
+					return ;
+				}
+				j++;
+			}
+			i++;
+		}
+	}
+	else
+	{
+		while (data->execcmds[i])
+		{
+			if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
+			{
+				reassign(data, 0, i);
 				return ;
 			}
-			j++;
+			j = 0;
+			while (data->execcmds[i][j])
+			{
+				if (data->execcmds[i][j] == '<') //check for "grep" "o" "<infile" or "grep" "o<" "infile" or "grep" "o" "<infile" or "grep" "o<infile"
+				{
+					reassign(data, 1, i);
+					return ;
+				}
+				j++;
+			}
+			i++;
 		}
-		i++;
 	}
 	
 }
@@ -1086,6 +1143,14 @@ void	ft_display_prompt(t_list *data, char **envp)
 						i++;
 					}
 					free(data->commandsarr);
+					while (data->execcmds[i] != NULL)
+					{
+						free(data->execcmds[i]);
+						data->execcmds[i] = NULL;
+						i++;
+					}
+					free(data->execcmds);
+					data->execcmds = NULL;
 				}
 			}
 		}
