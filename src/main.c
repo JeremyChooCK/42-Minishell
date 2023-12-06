@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/06 22:46:50 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/06 23:01:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -826,8 +826,8 @@ int	checkdir(char *path)
         path = getenv("HOME");
         if (path == NULL)
 		{
-            printf("cd: HOME not set\n");
-            exit(1);
+            fprintf(stderr, "cd: HOME not set\n");
+            return (1);
         }
     }
 	else if (ft_strcmp(path, "-") == 0)
@@ -835,20 +835,20 @@ int	checkdir(char *path)
         path = getenv("OLDPWD");
         if (path == NULL)
 		{
-            printf("cd: OLDPWD not set\n");
-            exit(1);
+			fprintf(stderr, "cd: OLDPWD not set\n");
+            return (1);
         }
         printf("%s\n", path);
     }
     if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
         perror("cd: getcwd failed");
-        exit(1);
+        return (1);
     }
     if (chdir(path) != 0)
 	{
         perror("cd");
-        exit(1);
+        return (1);
     }
     return (0);
 }
