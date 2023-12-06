@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/06 20:43:34 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/06 22:46:50 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -347,16 +347,19 @@ int	getcmd(t_list *data, char **envp)
 	char	*exit_status;
 
 	temp = NULL;
-    if (process_quotes(data->prompt) < 0) {
+    if (process_quotes(data->prompt) < 0)
+	{
         fprintf(stderr, "Error: Unmatched quotes in command.\n");
-        return -1;
+        return (-1);
     }
 	cmd_parts = ft_split(data->prompt, ' ');
-    if (!cmd_parts) {
+    if (!cmd_parts)
+	{
         fprintf(stderr, "Error splitting command input.\n");
-        return -1;
+        return (-1);
     }
-    for (int i = 0; cmd_parts[i] != NULL; ++i) {
+    for (int i = 0; cmd_parts[i] != NULL; ++i)
+	{
         char *expanded_cmd = expand_env_variables(cmd_parts[i]);
         if (expanded_cmd) {
             free(cmd_parts[i]);
@@ -371,7 +374,6 @@ int	getcmd(t_list *data, char **envp)
 		strarr = ft_split(data->prompt, '|');
 		while (data->i < numofpipes + 1)
 		{
-			// process_command(&strarr[data->i]);
 			data->commandsarr = ft_split(strarr[data->i], ' ');
 			data->path = ft_getpath(data);
 			if (data->i == numofpipes)
@@ -382,9 +384,7 @@ int	getcmd(t_list *data, char **envp)
 			data->i++;
 		}
 		dup2(data->stdin, STDIN_FILENO);
-		// printf("reset stdin : %i\n", data->stdin);
 		dup2(data->stdout, STDOUT_FILENO);
-		// printf("reset stdout : %i\n", data->stdout);
 		result = 1;
 	}
 	else
@@ -689,7 +689,6 @@ void	inputredirection(t_list *data)
 			i++;
 		}
 	}
-	
 }
 
 void	executecommands(t_list *data, char **envp, int type)
@@ -1057,6 +1056,80 @@ void	ft_env(t_env_list *env_vars)
 	}
 }
 
+int	is_valid_number(char *str)
+{
+	int	i;
+
+	i = 0;
+	if (str[i] == '+' || str[i] == '-')
+		i++;
+	while (str[i] != '\0')
+	{
+		if (!ft_isdigit(str[i]))
+			return (0);
+		i++;
+	}
+	return (i > 0);
+}
+
+void	strip_quotes(char *str)
+{
+	int	i;
+	int	j;
+	int	len;
+
+	i = 0;
+	j = 0;
+	len = ft_strlen(str);
+	while (i < len)
+	{
+		if (str[i] != '\"' && str[i] != '\'')
+			str[j++] = str[i];
+		i++;
+	}
+	str[j] = '\0';
+}
+
+void	ft_exit(char **args)
+{
+	char	*last_exit_status;
+	int		exit_status;
+	char	*arg;
+
+	exit_status = 0;
+	if (args[1])
+	{
+		if (args[2])
+		{
+			fprintf(stderr, "exit: too many arguments\n");
+			exit(1);
+		}
+		arg = ft_strdup(args[1]);
+		if (!arg)
+		{
+			perror("Error allocating memory");
+			exit(1);
+		}
+		strip_quotes(arg);
+		if (is_valid_number(arg))
+			exit_status = ft_atoi(arg);
+		else
+		{
+			fprintf(stderr, "exit: %s: numeric argument required\n", args[1]);
+			free(arg);
+			exit(2);
+		}
+		free(arg);
+	}
+	else
+	{
+		last_exit_status = getenv("?");
+		if (last_exit_status)
+			exit_status = ft_atoi(last_exit_status);
+	}
+	exit(exit_status);
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -1129,7 +1202,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 						free(data->prompt);
 						data->prompt = NULL;
 					}
-					break ;
+					ft_exit(data->commandsarr);
 				}
 				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 					ft_display_history(data);
@@ -1230,9 +1303,7 @@ int	main(int argc, char **argv, char **envp)
 		return (0);
 	data = malloc(sizeof(t_list));
 	data->stdin = dup(STDIN_FILENO);
-	// printf("init stdin : %i\n", data->stdin);
 	data->stdout = dup(STDOUT_FILENO);
-	// printf("init stdout : %i\n", data->stdout);
 	if (!data)
 		return(printf("Memory allocation failed\n"), 1);
 	ft_init_t_env(envp, &(data->env_vars));
