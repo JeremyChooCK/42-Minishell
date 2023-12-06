@@ -75,5 +75,6 @@ int		getcmd(t_list *data, char **envp);
 char	*getpath(t_list *data);
 char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
 char	*removedotslash(char *s);
+void	inputredirection(t_list *data);
 
 #endif
