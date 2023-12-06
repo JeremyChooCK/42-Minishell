@@ -326,6 +326,21 @@ void	prepare_execution(char **cmd_parts)
 	}
 }
 
+void	freesplit(char **s)
+{
+	int	i;
+
+	i = 0;
+	while (s[i] != NULL)
+	{
+		free(s[i]);
+		s[i] = NULL;
+		i++;
+	}
+	free(s);
+	s = NULL;
+}
+
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
@@ -334,6 +349,7 @@ int	getcmd(t_list *data, char **envp)
 	int 	type;
 	int		result;
 	char	*exit_status;
+	// int		j;
 
 	temp = NULL;
     if (process_quotes(data->prompt) < 0) {
@@ -360,12 +376,14 @@ int	getcmd(t_list *data, char **envp)
 		strarr = ft_split(data->prompt, '|');
 		while (data->i < numofpipes + 1)
 		{
-			process_command(&strarr[data->i]);
+			// process_command(&strarr[data->i]);
 			data->commandsarr = ft_split(strarr[data->i], ' ');
 			data->path = ft_getpath(data);
 			if (data->i == numofpipes)
 				type = 2;
 			executecommands(data, envp, type);
+			freesplit(data->execcmds);
+			data->execcmds = NULL;
 			data->i++;
 		}
 		dup2(data->stdin, STDIN_FILENO);
