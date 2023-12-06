@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/04 21:20:02 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/06 20:43:34 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -260,7 +260,6 @@ char	*expand_env_variables(char *command)
 	in_double_quote = 0;
 	while (*command)
 	{
-		command++;
 		in_single_quote = toggle_quote_state(in_single_quote, *command);
 		in_double_quote = toggle_quote_state(in_double_quote, *command);
 		if (*command == '$' && !in_single_quote)
@@ -271,6 +270,7 @@ char	*expand_env_variables(char *command)
 		}
 		else
 			*temp++ = *command;
+		command++;
 	}
 	*temp = '\0';
 	return (result);
@@ -309,11 +309,6 @@ int process_quotes(char *cmd_line)
     return (in_single_quote || in_double_quote) ? -1 : 0;
 }
 
-char	**split_command_line(char *cmd_line)
-{
-    return (ft_split(cmd_line, ' '));
-}
-
 void	prepare_execution(char **cmd_parts)
 {
 	int	i;
@@ -346,17 +341,17 @@ int	getcmd(t_list *data, char **envp)
 	char	*temp;
 	int		numofpipes;
 	char	**strarr;
+	char	**cmd_parts;
 	int 	type;
 	int		result;
 	char	*exit_status;
-	// int		j;
 
 	temp = NULL;
     if (process_quotes(data->prompt) < 0) {
         fprintf(stderr, "Error: Unmatched quotes in command.\n");
         return -1;
     }
-    char **cmd_parts = split_command_line(data->prompt);
+	cmd_parts = ft_split(data->prompt, ' ');
     if (!cmd_parts) {
         fprintf(stderr, "Error splitting command input.\n");
         return -1;
@@ -400,10 +395,7 @@ int	getcmd(t_list *data, char **envp)
 	if (temp)
 		data->commandsarr = ft_split(temp, ' ');
 	if (data->commandsarr == NULL)
-	{
-		// printf("Error splitting command input.\n");
 		return (0);
-	}
 	exit_status = getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
@@ -1172,6 +1164,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 				}
 			}
 		}
+		else
+			setenv("?", "0", 1);
 		free(data->path);
 		if (data->prompt != NULL)
 		{
