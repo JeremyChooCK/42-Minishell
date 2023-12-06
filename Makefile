@@ -6,6 +6,8 @@ INCLUDE = inc
 BUILDDIR = build
 
 LIBFT_SRC = ft_isalnum.c \
+	ft_isdigit.c \
+	ft_atoi.c \
 	ft_bzero.c \
 	ft_strnew.c \
 	ft_realloc.c \
