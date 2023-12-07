@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 02:37:04 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 03:51:02 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1016,31 +1016,40 @@ void	ft_export(char *arg, t_env_list **env_list)
     }
 }
 
-void	ft_unset(char *arg, t_env_list **env_list)
+void	ft_unset(char **args, t_env_list **env_list)
 {
-    t_env_list *current;
-    t_env_list *prev;
+	t_env_list	*current;
+	t_env_list	*prev;
+	char		*arg;
+	int			i;
 
-    if (!arg || !env_list || !*env_list)
-        return ;
-    current = *env_list;
-    prev = NULL;
-    while (current != NULL)
+	i = 0;
+	if (!args || !env_list || !*env_list)
+		return ;
+	while (args[i] != NULL)
 	{
-        if (ft_strcmp(current->env_var.key, arg) == 0)
+		arg = args[i];
+	    current = *env_list;
+	    prev = NULL;
+	    while (current != NULL)
 		{
-            if (prev == NULL)
-                *env_list = current->next;
-            else
-                prev->next = current->next;
-            free(current->env_var.key);
-            free(current->env_var.value);
-            free(current);
-            return ;
-        }
-        prev = current;
-        current = current->next;
-    }
+	        if (ft_strcmp(current->env_var.key, arg) == 0)
+			{
+	            if (prev == NULL)
+	                *env_list = current->next;
+	            else
+	                prev->next = current->next;
+	            free(current->env_var.key);
+	            free(current->env_var.value);
+	            free(current);
+	            break ;
+	        }
+	        prev = current;
+	        current = current->next;
+	    }
+		i++;
+	}
+	setenv("?", "0", 1);
 }
 
 void	ft_env(t_env_list *env_vars)
@@ -1194,7 +1203,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 					ft_export(data->commandsarr[1], &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-					ft_unset(data->commandsarr[1], &(data->env_vars));
+					ft_unset(data->commandsarr + 1, &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "env") == 0)
 					ft_env(data->env_vars);
 				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
