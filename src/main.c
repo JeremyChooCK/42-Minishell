@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 04:59:46 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 05:31:27 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1231,7 +1231,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 					}
 				}
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-					ft_pwd();
+					setenv("?", ft_itoa(ft_pwd()), 1);
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 					ft_export(data->commandsarr[1], &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
