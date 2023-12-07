@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/07 22:53:35 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 00:18:23 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -211,7 +211,7 @@ void	replace_exit_status(char **command, char *exit_status)
 
 int	toggle_quote_state(int quote_state, char current_char)
 {
-	if (current_char == '\'' || current_char == '\"')
+	if (current_char == '\'')
 		return (!quote_state);
 	return (quote_state);
 }
@@ -250,18 +250,15 @@ char	*expand_env_variables(char *command)
 	char	*result;
 	char	*temp;
 	int		in_single_quote;
-	int		in_double_quote;
 
 	result = ft_strnew(ft_strlen(command));
 	if (!result)
 		return (NULL);
 	temp = result;
 	in_single_quote = 0;
-	in_double_quote = 0;
 	while (*command)
 	{
 		in_single_quote = toggle_quote_state(in_single_quote, *command);
-		in_double_quote = toggle_quote_state(in_double_quote, *command);
 		if (*command == '$' && !in_single_quote)
 		{
 			temp = process_env_var(&command, result, temp);
@@ -288,7 +285,7 @@ void	process_command(char **command)
 	}
 }
 
-int process_quotes(char *cmd_line)
+int	process_quotes(char *cmd_line)
 {
     int in_single_quote = 0;
     int in_double_quote = 0;
