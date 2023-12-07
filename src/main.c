@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 03:51:02 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 04:59:46 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -971,23 +971,53 @@ t_env_list	*create_env_node(char *env_str)
 	return (node);
 }
 
+int	is_valid_identifier(char *str)
+{
+	if (!str || !*str || ft_isdigit(*str))
+		return (0);
+	while (*str)
+	{
+		if (!ft_isalnum(*str) && *str != '_')
+			return (0);
+		str++;
+	}
+	return (1);
+}
+
 void	ft_export(char *arg, t_env_list **env_list)
 {
     char		*key;
     char		*value;
 	char		*separator;
     t_env_list	*current;
+	t_env_list	*new_node;
 
 	if (!arg || !env_list)
+	{
+		setenv("?", "1", 1);
 		return ;
+	}
 	separator = ft_strchr(arg, '=');
-	if (!separator)
-    {
-        printf("export: Invalid argument format. Needs 'key=value'.\n");
+	if (separator)
+	{
+		key = ft_strndup(arg, separator - arg);
+		value = ft_strdup(separator + 1);
+	}
+	else
+	{
+		key = ft_strdup(arg);
+		value = ft_strdup("");
+	}
+	key = ft_strndup(arg, separator - arg);
+	if (!is_valid_identifier(key))
+	{
+		ft_putstr_fd(" not a valid identifier\n", 2);
+		free(key);
+		free(value);
+		setenv("?", "1", 1);
 		return ;
-    }
-    key = ft_strndup(arg, separator - arg);
-    value = ft_strdup(separator + 1);
+	}
+	setenv("?", "0", 1);
     for (current = *env_list; current != NULL; current = current->next)
     {
         if (ft_strcmp(current->env_var.key, key) == 0)
@@ -998,7 +1028,7 @@ void	ft_export(char *arg, t_env_list **env_list)
             return ;
         }
     }
-    t_env_list *new_node = create_env_node(arg);
+	new_node = create_env_node(arg);
     if (!new_node)
     {
         free(key);
@@ -1014,6 +1044,8 @@ void	ft_export(char *arg, t_env_list **env_list)
             current = current->next;
         current->next = new_node;
     }
+	free(key);
+	free(value);
 }
 
 void	ft_unset(char **args, t_env_list **env_list)
