@@ -28,8 +28,7 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 
-# define HOSTNAME_MAX 256
-# define VAR_NAME_SIZE 256
+# define NAME_SIZE 256
 
 typedef struct s_env_var
 {
@@ -65,16 +64,20 @@ typedef struct s_list
 	t_env_list	*env_vars;
 }	t_list;
 
-int		checkdir(char *path);
+void	ft_sigint_handler(int sig);
+void	ft_sigquit_handler(int sig);
+void	ft_setup_signal_handlers(void);
+char	**split_and_validate_path(char *path);
+char	*join_paths_and_check_access(char **splitpath, t_list *data);
+char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data);
+void	free_splitpath(char **splitpath);
+char	*ft_getpath(t_list *data);
 int		checkempty(char *s);
 void	executecommands(t_list *data, char **envp, int type);
 void	ft_add_to_history(t_list *data, char *command);
 void	ft_display_history(t_list *data);
 void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
-char	*getpath(t_list *data);
-char	*remove_dotdot_slash_and_goback_one_dir(char *s, char *cwd);
-char	*removedotslash(char *s);
 void	inputredirection(t_list *data);
 
 #endif
