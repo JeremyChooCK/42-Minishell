@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 00:18:23 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 02:37:04 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -218,16 +218,16 @@ int	toggle_quote_state(int quote_state, char current_char)
 
 char	*process_env_var(char **p, char *result, char *temp)
 {
-	char	var_name[VAR_NAME_SIZE];
+	char	var_name[NAME_SIZE];
 	char	*end;
 	char	*var_value;
 	size_t	len;
 
-	ft_bzero(var_name, VAR_NAME_SIZE);
+	ft_bzero(var_name, NAME_SIZE);
 	end = *p + 1;
 	while (ft_isalnum((unsigned char)*end) || *end == '_')
 		end++;
-	ft_strncpy(var_name, *p + 1, ft_min(end - *p - 1, VAR_NAME_SIZE - 1));
+	ft_strncpy(var_name, *p + 1, ft_min(end - *p - 1, NAME_SIZE - 1));
 	var_value = getenv(var_name);
 	if (var_value)
 	{
@@ -809,40 +809,47 @@ void	ft_display_history(t_list *data)
 	}
 }
 
-int	checkdir(char *path)
+int	checkdir(char **args)
 {
 	char	cwd[4096];
+	char	*path;
 
-    if (path == NULL || ft_strcmp(path, "~") == 0)
+	if (args && args[0] && args[1])
 	{
-        path = getenv("HOME");
-        if (path == NULL)
+		ft_putstr_fd("cd: too many arguments\n", 2);
+		return (1);
+	}
+	path = args[0];
+	if (path == NULL || ft_strcmp(path, "~") == 0)
+	{
+		path = getenv("HOME");
+		if (path == NULL)
 		{
-            ft_putstr_fd("cd: HOME not set\n", 2);
-            return (1);
-        }
-    }
+			ft_putstr_fd("cd: HOME not set\n", 2);
+			return (1);
+		}
+	}
 	else if (ft_strcmp(path, "-") == 0)
 	{
-        path = getenv("OLDPWD");
-        if (path == NULL)
+		path = getenv("OLDPWD");
+		if (path == NULL)
 		{
 			ft_putstr_fd("cd: OLDPWD not set\n", 2);
-            return (1);
-        }
-        printf("%s\n", path);
-    }
-    if (getcwd(cwd, sizeof(cwd)) == NULL)
+			return (1);
+		}
+		printf("%s\n", path);
+	}
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
-        perror("cd: getcwd failed");
-        return (1);
-    }
-    if (chdir(path) != 0)
+		perror("cd: getcwd failed");
+		return (1);
+	}
+	if (chdir(path) != 0)
 	{
-        perror("cd");
-        return (1);
-    }
-    return (0);
+		perror("cd");
+		return (1);
+	}
+	return (0);
 }
 
 void	remove_chars(char *str, const char *chars_to_remove)
@@ -1125,7 +1132,7 @@ void	ft_exit(char **args)
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
-    char	hostname[HOSTNAME_MAX];
+    char	hostname[NAME_SIZE];
     char	cwd[4096];
     char	*username;
 	int		i;
@@ -1171,7 +1178,17 @@ void	ft_display_prompt(t_list *data, char **envp)
 				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
 					setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-					setenv("?", ft_itoa(checkdir(data->commandsarr[1])), 1);
+				{
+					char *expanded_args[3] = {NULL, NULL, NULL};
+					for (int i = 1; i <= 2 && data->commandsarr[i] != NULL; i++)
+						expanded_args[i-1] = expand_env_variables(data->commandsarr[i]);
+					setenv("?", ft_itoa(checkdir(expanded_args)), 1);
+					for (int i = 0; i < 2; i++)
+					{
+						if (expanded_args[i] != NULL)
+							free(expanded_args[i]);
+					}
+				}
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 					ft_pwd();
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
