@@ -7,10 +7,12 @@ BUILDDIR = build
 
 LIBFT_SRC = ft_isalnum.c \
 	ft_isdigit.c \
+	ft_itoa.c \
 	ft_atoi.c \
 	ft_bzero.c \
-	ft_strnew.c \
+	ft_putstr_fd.c \
 	ft_realloc.c \
+	ft_strnew.c \
 	ft_strchr.c \
 	ft_strdup.c \
 	ft_strncat.c \
