@@ -6,12 +6,49 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 07:20:49 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 09:33:58 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
 char	*g_prompt = NULL;
+
+extern char **environ;
+
+int ft_setenv(const char *name, const char *value, int overwrite) {
+    if (name == NULL || value == NULL || strchr(name, '=') != NULL)
+        return -1;
+    size_t name_len = strlen(name);
+    size_t value_len = strlen(value);
+    for (int i = 0; environ[i] != NULL; i++) {
+        if (strncmp(environ[i], name, name_len) == 0 && environ[i][name_len] == '=') {
+            if (!overwrite)
+                return 0;
+            size_t new_size = name_len + value_len + 2;
+            char *new_env = malloc(new_size);
+            if (new_env == NULL)
+                return -1;
+            snprintf(new_env, new_size, "%s=%s", name, value);
+            free(environ[i]);
+            environ[i] = new_env;
+            return 0;
+        }
+    }
+    int count;
+    for (count = 0; environ[count] != NULL; count++);
+    char **new_environ = realloc(environ, sizeof(char *) * (count + 2));
+    if (new_environ == NULL)
+        return -1;
+    size_t new_var_size = name_len + value_len + 2;
+    char *new_var = malloc(new_var_size);
+    if (new_var == NULL)
+        return -1;
+    snprintf(new_var, new_var_size, "%s=%s", name, value);
+    new_environ[count] = new_var;
+    new_environ[count + 1] = NULL;
+    environ = new_environ;
+    return 0;
+}
 
 void	ft_sigint_handler(int sig)
 {
@@ -753,7 +790,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		{
 			wait(&status);
 			if (WIFEXITED(status))
-				setenv("?", ft_itoa(WEXITSTATUS(status)), 1);
+				ft_setenv("?", ft_itoa(WEXITSTATUS(status)), 1);
 		}
 		wait(NULL);
     }
@@ -1012,7 +1049,7 @@ void	ft_export(char *arg, t_env_list **env_list)
 
 	if (!arg || !env_list)
 	{
-		setenv("?", "1", 1);
+		ft_setenv("?", "1", 1);
 		return ;
 	}
 	separator = ft_strchr(arg, '=');
@@ -1032,10 +1069,10 @@ void	ft_export(char *arg, t_env_list **env_list)
 		ft_putstr_fd(" not a valid identifier\n", 2);
 		free(key);
 		free(value);
-		setenv("?", "1", 1);
+		ft_setenv("?", "1", 1);
 		return ;
 	}
-	setenv("?", "0", 1);
+	ft_setenv("?", "0", 1);
     for (current = *env_list; current != NULL; current = current->next)
     {
         if (ft_strcmp(current->env_var.key, key) == 0)
@@ -1099,7 +1136,7 @@ void	ft_unset(char **args, t_env_list **env_list)
 	    }
 		i++;
 	}
-	setenv("?", "0", 1);
+	ft_setenv("?", "0", 1);
 }
 
 void	ft_env(t_env_list *env_vars)
@@ -1235,13 +1272,13 @@ void	ft_display_prompt(t_list *data, char **envp)
 			if (getcmd(data, envp) == 0)
 			{
 				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-					setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+					ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 				{
 					char *expanded_args[3] = {NULL, NULL, NULL};
 					for (int i = 1; i <= 2 && data->commandsarr[i] != NULL; i++)
 						expanded_args[i-1] = expand_env_variables(data->commandsarr[i]);
-					setenv("?", ft_itoa(checkdir(expanded_args)), 1);
+					ft_setenv("?", ft_itoa(checkdir(expanded_args)), 1);
 					for (int i = 0; i < 2; i++)
 					{
 						if (expanded_args[i] != NULL)
@@ -1249,7 +1286,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 					}
 				}
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-					setenv("?", ft_itoa(ft_pwd()), 1);
+					ft_setenv("?", ft_itoa(ft_pwd()), 1);
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 					ft_export(data->commandsarr[1], &(data->env_vars));
 				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
@@ -1300,7 +1337,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 			}
 		}
 		else
-			setenv("?", "0", 1);
+			ft_setenv("?", "0", 1);
 		free(data->path);
 		if (data->prompt != NULL)
 		{
