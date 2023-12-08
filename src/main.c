@@ -6,56 +6,12 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 10:30:31 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 11:06:16 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-char		*g_prompt = NULL;
-
-extern char	**environ;
-
-int ft_setenv(const char *name, const char *value, int overwrite)
-{
-    if (name == NULL || value == NULL || strchr(name, '=') != NULL)
-        return -1;
-    size_t name_len = strlen(name);
-    size_t value_len = strlen(value);
-    for (int i = 0; environ[i] != NULL; i++)
-	{
-        if (strncmp(environ[i], name, name_len) == 0 && environ[i][name_len] == '=')
-		{
-            if (!overwrite)
-                return 0;
-            size_t new_size = name_len + value_len + 2;
-            char *new_env = malloc(new_size);
-            if (new_env == NULL)
-                return -1;
-            strcpy(new_env, name);
-            strcat(new_env, "=");
-            strcat(new_env, value);
-            free(environ[i]);
-            environ[i] = new_env;
-            return 0;
-        }
-    }
-    int count;
-    for (count = 0; environ[count] != NULL; count++);
-    char **new_environ = realloc(environ, sizeof(char *) * (count + 2));
-    if (new_environ == NULL)
-        return -1;
-    size_t new_var_size = name_len + value_len + 2;
-    char *new_var = malloc(new_var_size);
-    if (new_var == NULL)
-        return -1;
-    strcpy(new_var, name);
-    strcat(new_var, "=");
-    strcat(new_var, value);
-    new_environ[count] = new_var;
-    new_environ[count + 1] = NULL;
-    environ = new_environ;
-    return 0;
-}
+char		*g_prompt;
 
 void	ft_sigint_handler(int sig)
 {

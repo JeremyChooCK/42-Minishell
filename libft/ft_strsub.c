@@ -6,7 +6,7 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/12/08 06:32:13 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/08 12:44:07 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -21,7 +21,6 @@ char	*ft_strsub(char const *s, unsigned int start, size_t len)
 	substr = (char *)malloc(sizeof(char) * (len + 1));
 	if (!substr)
 		return (NULL);
-
 	i = 0;
 	while (i < len && s[start + i])
 	{

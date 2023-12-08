@@ -12,6 +12,7 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_bzero.c \
 	ft_putstr_fd.c \
 	ft_realloc.c \
+	ft_setenv.c \
 	ft_strnew.c \
 	ft_strchr.c \
 	ft_strdup.c \
