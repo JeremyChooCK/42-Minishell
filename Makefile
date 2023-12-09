@@ -1,6 +1,6 @@
 NAME = minishell
 CC = cc
-CFLAGS = -Wall -Wextra -Werror -g
+CFLAGS = -Wall -Wextra -Werror -Wshadow -g
 LDFLAGS = -lreadline
 INCLUDE = inc
 BUILDDIR = build
