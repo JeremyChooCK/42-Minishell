@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/09 12:19:56 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/09 16:35:00 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -320,7 +320,7 @@ void	prepare_execution(char **cmd_parts)
 	while (cmd_parts[i] != NULL)
 	{
 		++i;
-        cmd_parts[i] = expand_env_variables(cmd_parts[i]);
+		cmd_parts[i] = expand_env_variables(cmd_parts[i]);
 	}
 }
 
@@ -342,12 +342,13 @@ void	freesplit(char **s)
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
-	int		numofpipes;
+	char	*exit_status;
 	char	**strarr;
 	char	**cmd_parts;
+	int		numofpipes;
 	int 	type;
 	int		result;
-	char	*exit_status;
+	int		i;
 
 	temp = NULL;
     if (process_quotes(data->prompt) < 0)
@@ -361,7 +362,7 @@ int	getcmd(t_list *data, char **envp)
         ft_putstr_fd("Error splitting command input.\n", 2);
         return (-1);
     }
-    for (int i = 0; cmd_parts[i] != NULL; ++i)
+    for (i = 0; cmd_parts[i] != NULL; ++i)
 	{
         char *expanded_cmd = expand_env_variables(cmd_parts[i]);
         if (expanded_cmd) {
@@ -1361,6 +1362,8 @@ int	main(int argc, char **argv, char **envp)
 	ft_setup_signal_handlers();
 	if (!argc && !argv)
 		return (0);
+	if (!getenv("?"))
+		ft_setenv("?", "0", 1);
 	data = malloc(sizeof(t_list));
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
