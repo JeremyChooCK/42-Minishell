@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/08 14:49:06 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/09 12:19:56 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -287,23 +287,29 @@ void	process_command(char **command)
 
 int	process_quotes(char *cmd_line)
 {
-    int in_single_quote = 0;
-    int in_double_quote = 0;
+	int	i;
+	int	in_single_quote;
+	int	in_double_quote;
 
-    for (int i = 0; cmd_line[i] != '\0'; ++i) {
-        if (cmd_line[i] == '\'' && !in_double_quote)
-            in_single_quote = !in_single_quote;
-        else if (cmd_line[i] == '\"' && !in_single_quote)
-            in_double_quote = !in_double_quote;
-        else if (cmd_line[i] == '\\' && !in_single_quote)
+	i = 0;
+	in_single_quote = 0;
+	in_double_quote = 0;
+	while (cmd_line[i] != '\0')
+	{
+		i++;
+		if (cmd_line[i] == '\'' && !in_double_quote)
+			in_single_quote = !in_single_quote;
+		else if (cmd_line[i] == '\"' && !in_single_quote)
+			in_double_quote = !in_double_quote;
+		else if (cmd_line[i] == '\\' && !in_single_quote)
 		{
-            if (cmd_line[i + 1] != '\0')
+			if (cmd_line[i + 1] != '\0')
 				i++;
-            else
+			else
 				return (-1);
-        }
-    }
-    return (in_single_quote || in_double_quote) ? -1 : 0;
+		}
+	}
+	return ((in_single_quote || in_double_quote) * -1);
 }
 
 void	prepare_execution(char **cmd_parts)
@@ -890,7 +896,6 @@ void echo_out(char **str, int pos)
     char *temp;
     char *expanded_cmd;
     int in_single_quote = 0;
-    int in_double_quote = 0;
 
     temp = ft_strdup(str[pos]);
     if (temp == NULL)
@@ -900,8 +905,6 @@ void echo_out(char **str, int pos)
     }
     if (temp[0] == '\'' && temp[ft_strlen(temp) - 1] == '\'')
         in_single_quote = 1;
-    if (temp[0] == '\"' && temp[ft_strlen(temp) - 1] == '\"')
-        in_double_quote = 1;
     remove_chars(temp, "'\"");
     if (!in_single_quote)
     {
@@ -1239,10 +1242,10 @@ void	ft_display_prompt(t_list *data, char **envp)
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 				{
 					char *expanded_args[3] = {NULL, NULL, NULL};
-					for (int i = 1; i <= 2 && data->commandsarr[i] != NULL; i++)
+					for (i = 1; i <= 2 && data->commandsarr[i] != NULL; i++)
 						expanded_args[i-1] = expand_env_variables(data->commandsarr[i]);
 					ft_setenv("?", ft_itoa(checkdir(expanded_args)), 1);
-					for (int i = 0; i < 2; i++)
+					for (i = 0; i < 2; i++)
 					{
 						if (expanded_args[i] != NULL)
 							free(expanded_args[i]);
