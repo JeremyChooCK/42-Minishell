@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/09 12:19:56 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/09 17:54:33 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -232,7 +232,7 @@ char	*process_env_var(char **p, char *result, char *temp)
 	if (var_value)
 	{
 		len = ft_strlen(var_value);
-		temp = realloc(result, (temp - result) + len + ft_strlen(end) + 1);
+		temp = ft_realloc(result, (temp - result) + len + ft_strlen(end) + 1);
 		if (!temp)
 		{
 			free(result);
@@ -320,7 +320,7 @@ void	prepare_execution(char **cmd_parts)
 	while (cmd_parts[i] != NULL)
 	{
 		++i;
-        cmd_parts[i] = expand_env_variables(cmd_parts[i]);
+		cmd_parts[i] = expand_env_variables(cmd_parts[i]);
 	}
 }
 
@@ -342,12 +342,13 @@ void	freesplit(char **s)
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
-	int		numofpipes;
+	char	*exit_status;
 	char	**strarr;
 	char	**cmd_parts;
+	int		numofpipes;
 	int 	type;
 	int		result;
-	char	*exit_status;
+	int		i;
 
 	temp = NULL;
     if (process_quotes(data->prompt) < 0)
@@ -361,7 +362,7 @@ int	getcmd(t_list *data, char **envp)
         ft_putstr_fd("Error splitting command input.\n", 2);
         return (-1);
     }
-    for (int i = 0; cmd_parts[i] != NULL; ++i)
+    for (i = 0; cmd_parts[i] != NULL; ++i)
 	{
         char *expanded_cmd = expand_env_variables(cmd_parts[i]);
         if (expanded_cmd) {
@@ -815,6 +816,22 @@ void	ft_display_history(t_list *data)
 	}
 }
 
+char	*parse_env_var(const char *input)
+{
+	char	*env_value;
+
+	if (input[0] == '$')
+	{
+		env_value = getenv(input + 1);
+		if (env_value != NULL)
+			return (strdup(env_value));
+		else
+			return (NULL);
+	}
+	else
+		return (ft_strdup(input));
+}
+
 int	checkdir(char **args)
 {
 	char	cwd[4096];
@@ -850,7 +867,7 @@ int	checkdir(char **args)
 		perror("cd: getcwd failed");
 		return (1);
 	}
-	if (chdir(path) != 0)
+	if (chdir(parse_env_var(path)) != 0)
 	{
 		perror("cd");
 		return (1);
@@ -1240,17 +1257,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
 					ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
 				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-				{
-					char *expanded_args[3] = {NULL, NULL, NULL};
-					for (i = 1; i <= 2 && data->commandsarr[i] != NULL; i++)
-						expanded_args[i-1] = expand_env_variables(data->commandsarr[i]);
-					ft_setenv("?", ft_itoa(checkdir(expanded_args)), 1);
-					for (i = 0; i < 2; i++)
-					{
-						if (expanded_args[i] != NULL)
-							free(expanded_args[i]);
-					}
-				}
+					ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
 				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 					ft_setenv("?", ft_itoa(ft_pwd()), 1);
 				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
@@ -1361,6 +1368,7 @@ int	main(int argc, char **argv, char **envp)
 	ft_setup_signal_handlers();
 	if (!argc && !argv)
 		return (0);
+	ft_setenv("?", "0", 1);
 	data = malloc(sizeof(t_list));
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
