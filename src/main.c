@@ -1291,13 +1291,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 						i++;
 					}
 					free(data->commandsarr);
-					while (data->execcmds[i] != NULL)
-					{
-						free(data->execcmds[i]);
-						data->execcmds[i] = NULL;
-						i++;
-					}
-					free(data->execcmds);
+					if (data->execcmds)
+						freesplit(data->execcmds);
 					data->execcmds = NULL;
 				}
 			}
