@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/09 17:54:33 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/10 09:36:26 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -908,34 +908,38 @@ void	remove_chars(char *str, const char *chars_to_remove)
 	str[j] = '\0';
 }
 
-void echo_out(char **str, int pos)
+void	echo_out(char **str, int pos)
 {
-    char *temp;
-    char *expanded_cmd;
-    int in_single_quote = 0;
+	char	*temp;
+	char	*expanded_cmd;
+	int		in_single_quote;
 
-    temp = ft_strdup(str[pos]);
-    if (temp == NULL)
-    {
-        perror("Failed to allocate memory");
-        exit(1);
-    }
-    if (temp[0] == '\'' && temp[ft_strlen(temp) - 1] == '\'')
-        in_single_quote = 1;
-    remove_chars(temp, "'\"");
-    if (!in_single_quote)
-    {
-        expanded_cmd = expand_env_variables(temp);
-        if (expanded_cmd) {
-            printf("%s", expanded_cmd);
-            free(expanded_cmd);
-        } else {
-            printf("%s", temp);
-        }
-    }
-    else
-        printf("%s", temp);
-    free(temp);
+	in_single_quote = 0;
+	temp = ft_strdup(str[pos]);
+	if (temp == NULL)
+	{
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+	if (temp[0] == '\'' && temp[ft_strlen(temp) - 1] == '\'')
+		in_single_quote = 1;
+	remove_chars(temp, "'\"");
+	if (ft_strcmp(temp, "$") == 0)
+		printf("$");
+	else if (!in_single_quote)
+	{
+		expanded_cmd = expand_env_variables(temp);
+		if (expanded_cmd)
+		{
+			printf("%s", expanded_cmd);
+			free(expanded_cmd);
+		}
+		else
+			printf("%s", temp);
+	}
+	else
+		printf("%s", temp);
+	free(temp);
 }
 
 int	ft_echo(char **args)
