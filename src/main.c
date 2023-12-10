@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/10 14:38:27 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/10 16:40:16 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -338,20 +338,11 @@ void	freesplit(char **s)
 	s = NULL;
 }
 
-// TODO this function needs refactoring, be careful not to break it.
-int	getcmd(t_list *data, char **envp)
+int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
 {
-	char	*temp;
-	char	*exit_status;
 	char	*expanded_cmd;
-	char	**strarr;
-	char	**cmd_parts;
-	int		numofpipes;
-	int 	type;
-	int		result;
 	int		i;
 
-	temp = NULL;
 	if (process_quotes(data->prompt) < 0)
 	{
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
@@ -374,12 +365,23 @@ int	getcmd(t_list *data, char **envp)
 		}
 		i++;
 	}
-	data->i = 0;
-	numofpipes = checkforpipe(data->prompt);
+	*numofpipes = checkforpipe(data->prompt);
+	return (0);
+}
+
+int	execute_commands(t_list *data, char **envp, int numofpipes)
+{
+	char	*temp;
+	char	*exit_status;
+	char	**strarr;
+	int		type;
+	int		result;
+
+	result = 0;
 	if (numofpipes)
 	{
 		type = 1;
-		temp = 	reassign_prompt(data->prompt);
+		temp = reassign_prompt(data->prompt);
 		strarr = ft_split(temp, '|');
 		while (data->i < numofpipes + 1)
 		{
@@ -399,39 +401,55 @@ int	getcmd(t_list *data, char **envp)
 	else
 	{
 		temp = reassign_prompt(data->prompt);
-		result = 0;
-	}
-	if (temp)
 		data->commandsarr = ft_split(temp, ' ');
-	if (data->commandsarr == NULL)
-		return (0);
+		if (data->commandsarr == NULL)
+			return (0);
+	}
 	exit_status = getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
 	return (result);
 }
 
-void remove_quotes_from_arg(char *arg)
+int	getcmd(t_list *data, char **envp)
 {
-    int len = ft_strlen(arg);
-    if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
-			|| (arg[0] == '\'' && arg[len - 1] == '\'')))
+	char	**cmd_parts;
+	int		numofpipes;
+	int		result;
+
+	cmd_parts = NULL;
+	result = process_command_parts(data, cmd_parts, &numofpipes);
+	if (result < 0)
+		return (-1);
+	return (execute_commands(data, envp, numofpipes));
+}
+
+void	remove_quotes_from_arg(char *arg)
+{
+	int	len;
+
+	len = ft_strlen(arg);
+	if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
+		|| (arg[0] == '\'' && arg[len - 1] == '\'')))
 	{
-        ft_memmove(arg, arg + 1, len - 2);
-        arg[len - 2] = '\0';
-    }
+		ft_memmove(arg, arg + 1, len - 2);
+		arg[len - 2] = '\0';
+	}
 }
 
-void remove_quotes_from_args(char **args)
+void	remove_quotes_from_args(char **args)
 {
-    int i = 0;
-    while (args[i] != NULL) {
-        remove_quotes_from_arg(args[i]);
-        i++;
-    }
+	int	i;
+
+	i = 0;
+	while (args[i] != NULL)
+	{
+		remove_quotes_from_arg(args[i]);
+		i++;
+	}
 }
 
-void reassign(t_list *data, int flag, int index)
+void	reassign(t_list *data, int flag, int index)
 {
 	int		i;
 	int		j;
