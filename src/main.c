@@ -102,7 +102,6 @@ char	*ft_getpath(t_list *data)
 	char	*joinedpath;
 	char	*path;
 
-	inputredirection(data);
 	path = getenv("PATH");
 	splitpath = split_and_validate_path(path);
 	if (!splitpath)
@@ -380,7 +379,8 @@ int	getcmd(t_list *data, char **envp)
 	if (numofpipes)
 	{
 		type = 1;
-		strarr = ft_split(data->prompt, '|');
+		temp = 	reassign_prompt(data->prompt);
+		strarr = ft_split(temp, '|');
 		while (data->i < numofpipes + 1)
 		{
 			data->commandsarr = ft_split(strarr[data->i], ' ');
@@ -398,7 +398,7 @@ int	getcmd(t_list *data, char **envp)
 	}
 	else
 	{
-		temp = data->prompt;
+		temp = reassign_prompt(data->prompt);
 		result = 0;
 	}
 	if (temp)
@@ -437,7 +437,6 @@ void reassign(t_list *data, int flag, int index)
 	int		j;
 	char 	*s;
 	char	*temp;
-	char	**result;
 
 	i = 0;
 	j = 0;
@@ -456,35 +455,17 @@ void reassign(t_list *data, int flag, int index)
 		free(s);
 		dup2(data->inputfd, 0);
 		close(data->inputfd);
-		if (data->execcmds[index + 1][i])
+		free(data->execcmds[index]);
+		free(data->execcmds[index + 1]);
+		j = index;
+		index++;
+		while (data->execcmds[index + 1])
 		{
-			j = 0;
-			s = malloc(sizeof(char) * ft_strlen(data->execcmds[index + 1] + i));
-			while(data->execcmds[index + 1][i])
-			{
-				s[j] = data->execcmds[index + 1][i];
-				i++;
-				j++;
-			}
-			s[j] = '\0';
-			free(data->execcmds[index + 1]);
-			data->execcmds[index + 1] = s;
-			free(data->execcmds[index]);
-		}
-		else
-		{
-			free(data->execcmds[index]);
-			free(data->execcmds[index + 1]);
-			j = index;
+			data->execcmds[index] = data->execcmds[index + 1];
 			index++;
-			while (data->execcmds[index + 1])
-			{
-				data->execcmds[index] = data->execcmds[index + 1];
-				index++;
-			}
-			data->execcmds[index] = NULL;
-			index = j;
 		}
+		data->execcmds[index] = NULL;
+		index = j;
 		while (data->execcmds[j + 1])
 		{
 			data->execcmds[j] = data->execcmds[j + 1];
@@ -492,211 +473,32 @@ void reassign(t_list *data, int flag, int index)
 		}
 		data->execcmds[j] = NULL;
 		free(data->commandsarr[0]);
-		data->commandsarr[0] = data->execcmds[0];
+		data->commandsarr[0] = NULL;
+		data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 		temp = data->execcmds[0];
 		if (!(access(ft_getpath(data), X_OK))) // if cant access then get path
 		{
 			data->execcmds[0] = ft_getpath(data);
 			free(temp);
 		}
-	}
-	else if (flag == 1)
-	{
-		while (data->execcmds[index][i] != '<')
-			i++;
-		// use s to store flags
-		s = malloc(sizeof(char) * i + 1);
-		while (j < i)
-		{
-			s[j] = data->execcmds[index][j];
-			j++;
-		}
-		s[j] = '\0';
-		if (s[0] == '\0') // if no flags
-		{
-			free(s);
-			i++;
-			j = i;
-			while (data->execcmds[index][j] && data->execcmds[index][j] != '>')
-				j++;
-			s = malloc(sizeof(char) * (j - i) + 1);
-			j = 0;
-			while (data->execcmds[index][i] && data->execcmds[index][i] != '>')
-			{
-				s[j] = data->execcmds[index][i];
-				j++;
-				i++;
-			}
-			s[j] = '\0';
-			data->inputfd = open(s, O_RDONLY);
-			dup2(data->inputfd, 0);
-			close(data->inputfd);
-			free(s);
-			if (data->execcmds[index][j + 1])
-			{
-				i = 0;
-				while(data->execcmds[index][j + i + 1])
-					i++;
-				s = malloc(sizeof(char) * i + 1);
-				i = 0;
-				while(data->execcmds[index][j + i + 1])
-				{
-					s[i] = data->execcmds[index][j + i + 1];
-					i++;
-				}
-				s[i] = '\0';
-				free(data->execcmds[index]);
-				data->execcmds[index] = s;
-				while(data->execcmds[index])
-					index++;
-			}
-			else
-			{
-				free(data->execcmds[index]);
-				while (data->execcmds[index + 1])
-				{
-					data->execcmds[index] = data->execcmds[index + 1];
-					index++;
-				}
-			}
-			data->execcmds[index] = NULL;
-			temp = data->commandsarr[0];
-			data->commandsarr[0] = data->execcmds[0];
-			free(temp);
-			if (!(access(ft_getpath(data), X_OK))) // if cant access then get path
-			{
-				data->execcmds[0] = ft_getpath(data);
-			}
-			// printf("execcmds[0] : %s\n", data->execcmds[0]);
-			// printf("execcmds[1] : %s\n", data->execcmds[1]);
-			// printf("execcmds[2] : %s\n", data->execcmds[2]);
-		}
-		else
-		{
-			j = 0;
-			while(data->execcmds[index][i + j + 1] && data->execcmds[index][i + j + 1] != '>')
-				j++;
-			temp = malloc(sizeof(char) * j + 1);
-			j = 0;
-			while(data->execcmds[index][i + j + 1] && data->execcmds[index][i + j + 1] != '>')
-			{
-				temp[j] = data->execcmds[index][i + j + 1];
-				j++;
-			}
-			temp[j] = '\0';
-			data->inputfd = open(temp, O_RDONLY);
-			dup2(data->inputfd, 0);
-			close(data->inputfd);
-			free(temp);
-			if (data->execcmds[index][i + j + 1])
-			{
-				i = 0;
-				while (data->execcmds[i])
-					i++;
-				result = malloc(sizeof(char *) * i + 1 + 1);
-				result[i + 1] = NULL;
-				i = 0;
-				while (i < index)
-				{
-					result[i] = data->execcmds[i];
-					i++;
-				}
-				result[i] = s;
-				result[i + 1] = ft_strdup(data->execcmds[index] + j + 1 + ft_strlen(s));
-				free(data->execcmds[index]);
-				free(data->execcmds);
-				data->execcmds = result;
-			}
-			else
-			{
-				free(data->execcmds[index]);
-				data->execcmds[index] = s;
-			}
-		}
-	}
-	else if (flag == 2)
-	{
-		while (data->commandsarr[i])
-			i++;
-		result = malloc(sizeof(char *) * (i + 1 + 1));
-		while (j <= index)
-		{
-			result[j] = data->commandsarr[j];
-			j++;
-		}
-		i = 0;
-		while (data->commandsarr[index][i] != '<')
-			i++;
-		j = 0;
-		while (data->commandsarr[index][i + j])
-			j++;
-		s = malloc(sizeof(char) * j + 1);
-		j = 0;
-		while (data->commandsarr[index][i + j])
-		{
-			s[j] = data->commandsarr[index][i + j];
-			j++;
-		}
-		s[j] = '\0';
-		result[index][i] = '\0';
-		index++;
-		result[index] = s;
-		index++;
-		while (data->commandsarr[index - 1])
-		{
-			result[index] = data->commandsarr[index - 1];
-			index++;
-		}
-		result[index] = NULL;
-		free(data->commandsarr);
-		data->commandsarr = result;
+		free(data->commandsarr[0]);
+		data->commandsarr[0] = NULL;
 	}
 }
 
 void	inputredirection(t_list *data)
 {
 	int	i;
-	int	j;
 
 	i = 0;
-	j = 0;
-	if (data->execcmds == NULL)
+	while (data->execcmds[i])
 	{
-		while (data->commandsarr[i])
+		if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
 		{
-			while (data->commandsarr[i][j])
-			{
-				if (data->commandsarr[i][j] == '<' && j != 0)
-				{
-					reassign(data, 2, i);
-					return ;
-				}
-				j++;
-			}
-			i++;
+			reassign(data, 0, i);
+			i = -1;
 		}
-	}
-	else
-	{
-		while (data->execcmds[i])
-		{
-			if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
-			{
-				reassign(data, 0, i);
-				return ;
-			}
-			j = 0;
-			while (data->execcmds[i][j])
-			{
-				if (data->execcmds[i][j] == '<') //check for "grep" "o" "<infile" or "grep" "o<" "infile" or "grep" "o" "<infile" or "grep" "o<infile"
-				{
-					reassign(data, 1, i);
-					return ;
-				}
-				j++;
-			}
-			i++;
-		}
+		i++;
 	}
 }
 
@@ -915,36 +717,35 @@ void	remove_chars(char *str, const char *chars_to_remove)
 
 void	echo_out(char **str, int pos)
 {
-	char	*temp;
-	char	*expanded_cmd;
-	int		in_single_quote;
+    char *temp;
+    char *expanded_cmd;
+    int in_single_quote = 0;
+    // int in_double_quote = 0;
 
-	in_single_quote = 0;
-	temp = ft_strdup(str[pos]);
-	if (temp == NULL)
-	{
-		perror("Failed to allocate memory");
-		exit(1);
-	}
-	if (temp[0] == '\'' && temp[ft_strlen(temp) - 1] == '\'')
-		in_single_quote = 1;
-	remove_chars(temp, "'\"");
-	if (ft_strcmp(temp, "$") == 0)
-		printf("$");
-	else if (!in_single_quote)
-	{
-		expanded_cmd = expand_env_variables(temp);
-		if (expanded_cmd)
-		{
-			printf("%s", expanded_cmd);
-			free(expanded_cmd);
-		}
-		else
-			printf("%s", temp);
-	}
-	else
-		printf("%s", temp);
-	free(temp);
+    temp = ft_strdup(str[pos]);
+    if (temp == NULL)
+    {
+        perror("Failed to allocate memory");
+        exit(1);
+    }
+    if (temp[0] == '\'' && temp[ft_strlen(temp) - 1] == '\'')
+        in_single_quote = 1;
+    if (temp[0] == '\"' && temp[ft_strlen(temp) - 1] == '\"')
+        // in_double_quote = 1;
+    remove_chars(temp, "'\"");
+    if (!in_single_quote)
+    {
+        expanded_cmd = expand_env_variables(temp);
+        if (expanded_cmd) {
+            printf("%s", expanded_cmd);
+            free(expanded_cmd);
+        } else {
+            printf("%s", temp);
+        }
+    }
+    else
+        printf("%s", temp);
+    free(temp);
 }
 
 int	ft_echo(char **args)
@@ -1217,6 +1018,81 @@ void	ft_exit(char **args)
 	exit(exit_status);
 }
 
+char	*reassign_prompt(char *prompt)
+{
+	int	i;
+	int	j;
+	int	len;
+	char	*s;
+
+	if (prompt == NULL)
+		return NULL;
+	len = ft_strlen(prompt);
+	i = 0;
+	while (prompt[i])
+	{
+		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
+			len += 2;
+		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+			len += 2;
+		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if << is present
+			len += 2;
+		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+			len += 2;
+		i++;
+	}
+	s = malloc(sizeof(char) * (len + 1));
+	i = 0;
+	j = 0;
+	while (prompt[i])
+	{
+		s[i + j] = prompt[i];
+		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
+		{
+			s[i + j] = ' ';
+			j++;
+			s[i + j] = '<';
+			j++;
+			s[i + j] = '<';
+			j++;
+			s[i + j] = ' ';
+			j--;
+			i++;
+		}
+		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+		{
+			s[i + j] = ' ';
+			j++;
+			s[i + j] = '<';
+			j++;
+			s[i + j] = ' ';
+		}
+		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
+		{
+			s[i + j] = ' ';
+			j++;
+			s[i + j] = '>';
+			j++;
+			s[i + j] = '>';
+			j++;
+			s[i + j] = ' ';
+			j--;
+			i++;
+		}
+		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+		{
+			s[i + j] = ' ';
+			j++;
+			s[i + j] = '>';
+			j++;
+			s[i + j] = ' ';
+		}
+		i++;
+	}
+	s[i + j] = '\0';
+	return (s);
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -1309,7 +1185,6 @@ void	ft_display_prompt(t_list *data, char **envp)
 					free(data->commandsarr);
 					if (data->execcmds)
 						freesplit(data->execcmds);
-					data->execcmds = NULL;
 				}
 			}
 		}

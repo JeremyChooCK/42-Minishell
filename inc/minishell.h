@@ -81,5 +81,6 @@ void	ft_display_history(t_list *data);
 void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
 void	inputredirection(t_list *data);
+char	*reassign_prompt(char *prompt);
 
 #endif
