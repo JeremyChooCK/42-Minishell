@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/10 09:36:26 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/10 14:38:27 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -339,10 +339,12 @@ void	freesplit(char **s)
 	s = NULL;
 }
 
+// TODO this function needs refactoring, be careful not to break it.
 int	getcmd(t_list *data, char **envp)
 {
 	char	*temp;
 	char	*exit_status;
+	char	*expanded_cmd;
 	char	**strarr;
 	char	**cmd_parts;
 	int		numofpipes;
@@ -351,25 +353,28 @@ int	getcmd(t_list *data, char **envp)
 	int		i;
 
 	temp = NULL;
-    if (process_quotes(data->prompt) < 0)
+	if (process_quotes(data->prompt) < 0)
 	{
-        ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
-        return (-1);
-    }
+		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
+		return (-1);
+	}
 	cmd_parts = ft_split(data->prompt, ' ');
-    if (!cmd_parts)
+	if (!cmd_parts)
 	{
-        ft_putstr_fd("Error splitting command input.\n", 2);
-        return (-1);
-    }
-    for (i = 0; cmd_parts[i] != NULL; ++i)
+		ft_putstr_fd("Error splitting command input.\n", 2);
+		return (-1);
+	}
+	i = 0;
+	while (cmd_parts[i] != NULL)
 	{
-        char *expanded_cmd = expand_env_variables(cmd_parts[i]);
-        if (expanded_cmd) {
-            free(cmd_parts[i]);
-            cmd_parts[i] = expanded_cmd;
-        }
-    }
+		expanded_cmd = expand_env_variables(cmd_parts[i]);
+		if (expanded_cmd)
+		{
+			free(cmd_parts[i]);
+			cmd_parts[i] = expanded_cmd;
+		}
+		i++;
+	}
 	data->i = 0;
 	numofpipes = checkforpipe(data->prompt);
 	if (numofpipes)
