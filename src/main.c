@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 16:28:40 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/11 18:21:34 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -624,29 +624,23 @@ void	inputredirection(t_list *data)
 
 void	executecommands(t_list *data, char **envp, int type)
 {
-    int id;
-    int i;
-    int status;
+	int	id;
+	int	i;
+	int	status;
 
-    if (pipe(data->pipefd) == -1)
-    {
-        perror("pipe error");
-        exit(EXIT_FAILURE);
-    }
-    i = 0;
-    while (data->commandsarr[i])
-        i++;
-    data->execcmds = malloc(sizeof(char *) * (i + 1));
-    if (!data->execcmds)
-    {
-        perror("malloc error");
-        exit(EXIT_FAILURE);
-    }
-    data->execcmds[0] = data->path;
-    data->path = NULL;
-    i = 1;
-    while (data->commandsarr[i])
-    {
+	if (pipe(data->pipefd) == -1)
+		exit(EXIT_FAILURE);
+	i = 0;
+	while (data->commandsarr[i])
+		i++;
+	data->execcmds = malloc(sizeof(char *) * (i + 1));
+	if (!data->execcmds)
+		exit(EXIT_FAILURE);
+	data->execcmds[0] = data->path;
+	data->path = NULL;
+	i = 1;
+	while (data->commandsarr[i])
+	{
         data->execcmds[i] = ft_strdup(data->commandsarr[i]);
         i++;
     }
@@ -670,7 +664,7 @@ void	executecommands(t_list *data, char **envp, int type)
         close(data->pipefd[1]);
 		// check for input redirection
 		inputredirection(data);
-        execve(data->execcmds[0], data->execcmds, envp);
+		execve(data->execcmds[0], data->execcmds, envp);
         perror(data->execcmds[0]);
         exit(EXIT_FAILURE);
     }
@@ -1203,6 +1197,15 @@ char	*reassign_prompt(char *prompt)
 	return (s);
 }
 
+void	parse_for_comments(char **input)
+{
+	char	*hash_pos;
+
+	hash_pos = ft_strchr(*input, '#');
+	if (hash_pos != NULL)
+		*hash_pos = '\0';
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -1241,7 +1244,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 			g_prompt = NULL;
 		}
 		if (!data->prompt)
-			break ;
+			return ;
+		parse_for_comments(&(data->prompt));
 		if (checkempty(data->prompt) == 0)
 		{
 			ft_add_to_history(data, data->prompt);
