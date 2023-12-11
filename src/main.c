@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 12:34:39 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/11 13:28:22 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -244,32 +244,68 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-char	*expand_env_variables(char *command)
+char	*get_env_var(const char* name)
 {
-	char	*result;
-	char	*temp;
-	int		in_single_quote;
+	char	*value;
 
-	result = ft_strnew(ft_strlen(command));
-	if (!result)
+	value = getenv(name);
+	if (value)
+		return (ft_strdup(value));
+	return (ft_strdup(""));
+}
+
+char	*expand_env_vars(const char* str)
+{
+	const char	*p = str;
+    char		*expanded_str;
+    char		*dest;
+	char		*var_name;
+	char		*var_value;
+
+	expanded_str = malloc(ft_strlen(str) + 1);
+	dest = expanded_str;
+	if (str == NULL)
 		return (NULL);
-	temp = result;
-	in_single_quote = 0;
-	while (*command)
-	{
-		in_single_quote = toggle_quote_state(in_single_quote, *command);
-		if (*command == '$' && !in_single_quote)
+    if (!expanded_str)
+		return (NULL);
+    while (*p) {
+        if (*p == '$' && *(p + 1))
 		{
-			temp = process_env_var(&command, result, temp);
-			if (!temp)
-				return (NULL);
-		}
-		else
-			*temp++ = *command;
-		command++;
-	}
-	*temp = '\0';
-	return (result);
+            const char* start = ++p;
+            while (*p && (isalnum(*p) || *p == '_')) p++;
+            size_t var_len = p - start;
+            var_name = ft_strndup(start, var_len);
+            var_value = get_env_var(var_name);
+            strcpy(dest, var_value);
+            dest += strlen(var_value);
+            //free(var_name);
+            //free(var_value);
+        } else {
+            *dest++ = *p++;
+        }
+    }
+    *dest = '\0';
+    return expanded_str;
+}
+
+char	*expand_env_variables(char *arg)
+{
+    char* result = strdup(arg);
+    int length = strlen(result);
+
+	if (arg == NULL)
+		return (NULL);
+    if (length >= 2 && ((result[0] == '"' && result[length - 1] == '"') ||
+                        (result[0] == '\'' && result[length - 1] == '\''))) {
+        memmove(result, result + 1, length - 2);
+        result[length - 2] = '\0';
+    }
+    if (arg[0] == '"') {
+        char* expanded = expand_env_vars(result);
+        free(result);
+        result = expanded;
+    }
+    return result;
 }
 
 void	process_command(char **command)
