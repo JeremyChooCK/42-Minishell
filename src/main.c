@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 18:21:34 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/11 20:01:53 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -664,8 +664,11 @@ void	executecommands(t_list *data, char **envp, int type)
         close(data->pipefd[1]);
 		// check for input redirection
 		inputredirection(data);
-		execve(data->execcmds[0], data->execcmds, envp);
-        perror(data->execcmds[0]);
+		if (data->execcmds[0] != NULL) // only execute not buildin function
+		{
+			execve(data->execcmds[0], data->execcmds, envp);
+        	perror("execve failed");
+		}
         exit(EXIT_FAILURE);
     }
     else
