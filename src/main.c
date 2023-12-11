@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 13:28:22 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/11 16:28:40 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -254,70 +254,71 @@ char	*get_env_var(const char* name)
 	return (ft_strdup(""));
 }
 
-char	*expand_env_vars(const char* str)
+int	is_var_char(char c)
 {
-	const char	*p = str;
-    char		*expanded_str;
-    char		*dest;
-	char		*var_name;
-	char		*var_value;
+	return (ft_isalnum(c) || c == '_');
+}
 
-	expanded_str = malloc(ft_strlen(str) + 1);
-	dest = expanded_str;
-	if (str == NULL)
-		return (NULL);
-    if (!expanded_str)
-		return (NULL);
-    while (*p) {
-        if (*p == '$' && *(p + 1))
-		{
-            const char* start = ++p;
-            while (*p && (isalnum(*p) || *p == '_')) p++;
-            size_t var_len = p - start;
-            var_name = ft_strndup(start, var_len);
-            var_value = get_env_var(var_name);
+size_t calculate_expansion_size(const char* str) {
+    size_t total_size = 0;
+    while (*str) {
+        if (*str == '$' && is_var_char(*(str + 1))) {
+            const char* start = ++str;
+            while (is_var_char(*str)) str++;
+            size_t var_len = str - start;
+            char* var_name = strndup(start, var_len);
+            char* var_value = getenv(var_name);
+            if (!var_value) var_value = "";
+            total_size += strlen(var_value);
+            free(var_name);
+        } else {
+            total_size++;
+            str++;
+        }
+    }
+    return total_size + 1;
+}
+
+char* expand_env_vars(const char* str) {
+    if (str == NULL) return NULL;
+    size_t buf_size = calculate_expansion_size(str);
+    char* buffer = malloc(buf_size);
+    if (!buffer) return NULL;
+    const char* src = str;
+    char* dest = buffer;
+    while (*src) {
+        if (*src == '$' && is_var_char(*(src + 1))) {
+            const char* start = ++src;
+            while (is_var_char(*src)) src++;
+            size_t var_len = src - start;
+            char* var_name = strndup(start, var_len);
+            char* var_value = getenv(var_name);
+            if (!var_value) var_value = "";
             strcpy(dest, var_value);
             dest += strlen(var_value);
-            //free(var_name);
-            //free(var_value);
+
+            free(var_name);
         } else {
-            *dest++ = *p++;
+            *dest++ = *src++;
         }
     }
     *dest = '\0';
-    return expanded_str;
+    return buffer;
 }
 
-char	*expand_env_variables(char *arg)
+char	*expand_env_variables(char *arg, int expand)
 {
-    char* result = strdup(arg);
-    int length = strlen(result);
+	char	*result;
 
 	if (arg == NULL)
 		return (NULL);
-    if (length >= 2 && ((result[0] == '"' && result[length - 1] == '"') ||
-                        (result[0] == '\'' && result[length - 1] == '\''))) {
-        memmove(result, result + 1, length - 2);
-        result[length - 2] = '\0';
-    }
-    if (arg[0] == '"') {
-        char* expanded = expand_env_vars(result);
-        free(result);
-        result = expanded;
-    }
-    return result;
-}
-
-void	process_command(char **command)
-{
-	char	*expanded_cmd;
-
-	expanded_cmd = expand_env_variables(*command);
-	if (expanded_cmd)
+	if (expand)
 	{
-		free(*command);
-		*command = expanded_cmd;
+		result = expand_env_vars(arg);
+		free(arg);
+		return (result);
 	}
+	return (arg);
 }
 
 int	process_quotes(char *cmd_line)
@@ -345,18 +346,6 @@ int	process_quotes(char *cmd_line)
 		}
 	}
 	return ((in_single_quote || in_double_quote) * -1);
-}
-
-void	prepare_execution(char **cmd_parts)
-{
-	int	i;
-
-	i = 0;
-	while (cmd_parts[i] != NULL)
-	{
-		++i;
-		cmd_parts[i] = expand_env_variables(cmd_parts[i]);
-	}
 }
 
 void	freesplit(char **s)
@@ -399,10 +388,10 @@ int	expand_variables_and_count_pipes(
 	i = 0;
 	while (cmd_parts[i] != NULL)
 	{
-		expanded_cmd = expand_env_variables(cmd_parts[i]);
+		expanded_cmd = expand_env_variables(cmd_parts[i], 1);
 		if (expanded_cmd)
 		{
-			free(cmd_parts[i]);
+			//free(cmd_parts[i]);
 			cmd_parts[i] = expanded_cmd;
 		}
 		i++;
@@ -788,12 +777,17 @@ void	echo_out(char **str, int pos)
 {
 	char	*temp;
 	char	*expanded_cmd;
+	int		expand;
+	int		length;
 
+	expand = 1;
 	temp = ft_strdup(str[pos]);
 	if (temp == NULL)
 		exit(1);
-	expanded_cmd = expand_env_variables(temp);
-	free(temp);
+	length = ft_strlen(temp);
+	if (length >= 2 && temp[0] == '\'' && temp[length - 1] == '\'')
+		expand = 0;
+	expanded_cmd = expand_env_variables(temp, expand);
 	if (expanded_cmd)
 	{
 		remove_chars(expanded_cmd, "'\"");
