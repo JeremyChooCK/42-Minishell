@@ -1102,7 +1102,6 @@ void	ft_display_prompt(t_list *data, char **envp)
     char	hostname[NAME_SIZE];
     char	cwd[4096];
     char	*username;
-	int		i;
 
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
@@ -1178,16 +1177,13 @@ void	ft_display_prompt(t_list *data, char **envp)
 					}
 					else
 						printf("Command not found: %s\n", data->commandsarr[0]);
-					i = 0;
-					while (data->commandsarr[i] != NULL)
-					{
-						free(data->commandsarr[i]);
-						data->commandsarr[i] = NULL;
-						i++;
-					}
-					free(data->commandsarr);
+					freesplit(data->commandsarr);
+					data->commandsarr = NULL;
 					if (data->execcmds)
+					{
 						freesplit(data->execcmds);
+						data->execcmds = NULL;
+					}
 				}
 			}
 		}
