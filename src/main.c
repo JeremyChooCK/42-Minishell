@@ -75,7 +75,9 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 
 	j = 0;
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
-		|| data->commandsarr[0][0] == '<')
+		|| ft_strcmp(data->commandsarr[0], "<<") == 0
+		|| ft_strcmp(data->commandsarr[0], ">") == 0
+		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
 		return (ft_strdup(data->commandsarr[0]));
 	while (splitpath[j])
 		free(splitpath[j++]);
@@ -506,6 +508,7 @@ void	reassign(t_list *data, int flag, int index)
 	int		j;
 	char 	*s;
 	char	*temp;
+	char	**result;
 
 	i = 0;
 	j = 0;
@@ -553,6 +556,50 @@ void	reassign(t_list *data, int flag, int index)
 		free(data->commandsarr[0]);
 		data->commandsarr[0] = NULL;
 	}
+	else if (flag == 2) // ">" "infile"
+	{
+		data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
+		dup2(data->inputfd, 1);
+		close(data->inputfd);
+		// if (data->inputfd == -1)
+		// {
+		// 	// Handle the error
+		// 	perror("Error opening file");
+		// 	// You may choose to exit the program or handle the error differently
+		// 	exit(EXIT_FAILURE);
+		// }
+		while (data->execcmds[i])
+			i++;
+		result = malloc(sizeof(char *) * (i + 1 - 2)); // minus the > and outfile
+		i = 0;
+		while (data->execcmds[i])
+		{
+			if (ft_strcmp(data->execcmds[i], ">") == 0)
+				i += 2;
+			if (data->execcmds[i] == NULL)
+				break ;
+			result[j] = ft_strdup(data->execcmds[i]);
+			i++;
+			j++;
+		}
+		result[j] = NULL;
+		freesplit(data->execcmds);
+		data->execcmds = result;
+		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
+		{
+			if (ft_strcmp(data->commandsarr[0], ">") == 0)
+				free(data->commandsarr[0]);
+			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
+		}
+		temp = ft_getpath(data);
+		s = data->execcmds[0];
+		if (!(access(temp, X_OK))) // if cant access then get path
+		{
+			data->execcmds[0] = ft_getpath(data);
+			free(temp);
+			free(s);
+		}
+	}
 }
 
 void	inputredirection(t_list *data)
@@ -565,6 +612,21 @@ void	inputredirection(t_list *data)
 		if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
 		{
 			reassign(data, 0, i);
+			i = -1;
+		}
+		else if (ft_strcmp(data->execcmds[i], "<<") == 0) // check for "<<" "infile"
+		{
+			reassign(data, 1, i);
+			i = -1;
+		}
+		else if (ft_strcmp(data->execcmds[i], ">") == 0) // check for ">" "infile"
+		{
+			reassign(data, 2, i);
+			i = -1;
+		}
+		else if (ft_strcmp(data->execcmds[i], ">>") == 0) // check for ">" "infile"
+		{
+			reassign(data, 3, i);
 			i = -1;
 		}
 		i++;
