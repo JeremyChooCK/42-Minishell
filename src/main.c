@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 09:04:32 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/11 12:34:39 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -338,22 +338,28 @@ void	freesplit(char **s)
 	s = NULL;
 }
 
-int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
+int	process_and_split_command(t_list *data, char ***cmd_parts)
 {
-	char	*expanded_cmd;
-	int		i;
-
 	if (process_quotes(data->prompt) < 0)
 	{
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
 		return (-1);
 	}
-	cmd_parts = ft_split(data->prompt, ' ');
-	if (!cmd_parts)
+	*cmd_parts = ft_split(data->prompt, ' ');
+	if (!*cmd_parts)
 	{
 		ft_putstr_fd("Error splitting command input.\n", 2);
 		return (-1);
 	}
+	return (0);
+}
+
+int	expand_variables_and_count_pipes(
+	char **cmd_parts, t_list *data, int *numofpipes)
+{
+	char	*expanded_cmd;
+	int		i;
+
 	i = 0;
 	while (cmd_parts[i] != NULL)
 	{
@@ -366,6 +372,15 @@ int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
 		i++;
 	}
 	*numofpipes = checkforpipe(data->prompt);
+	return (0);
+}
+
+int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
+{
+	if (process_and_split_command(data, &cmd_parts) < 0)
+		return (-1);
+	if (expand_variables_and_count_pipes(cmd_parts, data, numofpipes) < 0)
+		return (-1);
 	return (0);
 }
 
