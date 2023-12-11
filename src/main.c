@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 12:34:39 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/12 20:06:16 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -75,7 +75,9 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 
 	j = 0;
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
-		|| data->commandsarr[0][0] == '<')
+		|| ft_strcmp(data->commandsarr[0], "<<") == 0
+		|| ft_strcmp(data->commandsarr[0], ">") == 0
+		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
 		return (ft_strdup(data->commandsarr[0]));
 	while (splitpath[j])
 		free(splitpath[j++]);
@@ -244,44 +246,109 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-char	*expand_env_variables(char *command)
+char	*get_env_var(const char *name)
 {
-	char	*result;
-	char	*temp;
-	int		in_single_quote;
+	char	*value;
 
-	result = ft_strnew(ft_strlen(command));
-	if (!result)
-		return (NULL);
-	temp = result;
-	in_single_quote = 0;
-	while (*command)
-	{
-		in_single_quote = toggle_quote_state(in_single_quote, *command);
-		if (*command == '$' && !in_single_quote)
-		{
-			temp = process_env_var(&command, result, temp);
-			if (!temp)
-				return (NULL);
-		}
-		else
-			*temp++ = *command;
-		command++;
-	}
-	*temp = '\0';
-	return (result);
+	value = getenv(name);
+	if (value)
+		return (ft_strdup(value));
+	return (ft_strdup(""));
 }
 
-void	process_command(char **command)
+int	is_var_char(char c)
 {
-	char	*expanded_cmd;
+	return (ft_isalnum(c) || c == '_');
+}
 
-	expanded_cmd = expand_env_variables(*command);
-	if (expanded_cmd)
+size_t	calculate_expansion_size(char *str)
+{
+	char	*start;
+	char	*var_name;
+	char	*var_value;
+	size_t	total_size;
+	size_t	var_len;
+
+	total_size = 0;
+	while (*str)
 	{
-		free(*command);
-		*command = expanded_cmd;
+		if (*str == '$' && is_var_char(*(str + 1)))
+		{
+			start = ++str;
+			while (is_var_char(*str))
+				str++;
+			var_len = str - start;
+			var_name = ft_strndup(start, var_len);
+			var_value = getenv(var_name);
+			if (!var_value)
+				var_value = "";
+			total_size += ft_strlen(var_value);
+			free(var_name);
+		}
+		else
+		{
+			total_size++;
+			str++;
+		}
 	}
+	return (total_size + 1);
+}
+
+char	*expand_env_vars(char *str)
+{
+	char	*buffer;
+	char	*src;
+	char	*dest;
+	char	*start;
+	char	*var_name;
+	char	*var_value;
+	size_t	buf_size;
+	size_t	var_len;
+
+	if (str == NULL)
+		return (NULL);
+	buf_size = calculate_expansion_size(str);
+	buffer = malloc(buf_size);
+	if (!buffer)
+		return (NULL);
+	src = str;
+	dest = buffer;
+	while (*src)
+	{
+		if (*src == '$' && is_var_char(*(src + 1)))
+		{
+			start = ++src;
+			while (is_var_char(*src))
+				src++;
+			var_len = src - start;
+			var_name = ft_strndup(start, var_len);
+			var_value = getenv(var_name);
+			if (!var_value)
+				var_value = "";
+			ft_strcpy(dest, var_value);
+			dest += ft_strlen(var_value);
+			free(var_name);
+		}
+		else
+			*dest++ = *src++;
+	}
+	*dest = '\0';
+	return (buffer);
+}
+
+char	*expand_env_variables(char *arg, int expand)
+{
+	char	*result;
+
+	if (arg == NULL)
+		return (NULL);
+	if (expand)
+	{
+		result = expand_env_vars(arg);
+		free(arg);
+		return (result);
+	}
+	return (arg);
 }
 
 int	process_quotes(char *cmd_line)
@@ -309,18 +376,6 @@ int	process_quotes(char *cmd_line)
 		}
 	}
 	return ((in_single_quote || in_double_quote) * -1);
-}
-
-void	prepare_execution(char **cmd_parts)
-{
-	int	i;
-
-	i = 0;
-	while (cmd_parts[i] != NULL)
-	{
-		++i;
-		cmd_parts[i] = expand_env_variables(cmd_parts[i]);
-	}
 }
 
 void	freesplit(char **s)
@@ -363,10 +418,10 @@ int	expand_variables_and_count_pipes(
 	i = 0;
 	while (cmd_parts[i] != NULL)
 	{
-		expanded_cmd = expand_env_variables(cmd_parts[i]);
+		expanded_cmd = expand_env_variables(cmd_parts[i], 1);
 		if (expanded_cmd)
 		{
-			free(cmd_parts[i]);
+			//free(cmd_parts[i]);
 			cmd_parts[i] = expanded_cmd;
 		}
 		i++;
@@ -470,6 +525,7 @@ void	reassign(t_list *data, int flag, int index)
 	int		j;
 	char 	*s;
 	char	*temp;
+	char	**result;
 
 	i = 0;
 	j = 0;
@@ -517,6 +573,50 @@ void	reassign(t_list *data, int flag, int index)
 		free(data->commandsarr[0]);
 		data->commandsarr[0] = NULL;
 	}
+	else if (flag == 2) // ">" "infile"
+	{
+		data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
+		dup2(data->inputfd, 1);
+		close(data->inputfd);
+		// if (data->inputfd == -1)
+		// {
+		// 	// Handle the error
+		// 	perror("Error opening file");
+		// 	// You may choose to exit the program or handle the error differently
+		// 	exit(EXIT_FAILURE);
+		// }
+		while (data->execcmds[i])
+			i++;
+		result = malloc(sizeof(char *) * (i + 1 - 2)); // minus the > and outfile
+		i = 0;
+		while (data->execcmds[i])
+		{
+			if (ft_strcmp(data->execcmds[i], ">") == 0)
+				i += 2;
+			if (data->execcmds[i] == NULL)
+				break ;
+			result[j] = ft_strdup(data->execcmds[i]);
+			i++;
+			j++;
+		}
+		result[j] = NULL;
+		freesplit(data->execcmds);
+		data->execcmds = result;
+		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
+		{
+			if (ft_strcmp(data->commandsarr[0], ">") == 0)
+				free(data->commandsarr[0]);
+			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
+		}
+		temp = ft_getpath(data);
+		s = data->execcmds[0];
+		if (!(access(temp, X_OK))) // if cant access then get path
+		{
+			data->execcmds[0] = ft_getpath(data);
+			free(temp);
+			free(s);
+		}
+	}
 }
 
 void	inputredirection(t_list *data)
@@ -531,35 +631,44 @@ void	inputredirection(t_list *data)
 			reassign(data, 0, i);
 			i = -1;
 		}
+		else if (ft_strcmp(data->execcmds[i], "<<") == 0) // check for "<<" "infile"
+		{
+			reassign(data, 1, i);
+			i = -1;
+		}
+		else if (ft_strcmp(data->execcmds[i], ">") == 0) // check for ">" "infile"
+		{
+			reassign(data, 2, i);
+			i = -1;
+		}
+		else if (ft_strcmp(data->execcmds[i], ">>") == 0) // check for ">" "infile"
+		{
+			reassign(data, 3, i);
+			i = -1;
+		}
 		i++;
 	}
 }
 
 void	executecommands(t_list *data, char **envp, int type)
 {
-    int id;
-    int i;
-    int status;
+	int	id;
+	int	i;
+	int	status;
 
-    if (pipe(data->pipefd) == -1)
-    {
-        perror("pipe error");
-        exit(EXIT_FAILURE);
-    }
-    i = 0;
-    while (data->commandsarr[i])
-        i++;
-    data->execcmds = malloc(sizeof(char *) * (i + 1));
-    if (!data->execcmds)
-    {
-        perror("malloc error");
-        exit(EXIT_FAILURE);
-    }
-    data->execcmds[0] = data->path;
-    data->path = NULL;
-    i = 1;
-    while (data->commandsarr[i])
-    {
+	if (pipe(data->pipefd) == -1)
+		exit(EXIT_FAILURE);
+	i = 0;
+	while (data->commandsarr[i])
+		i++;
+	data->execcmds = malloc(sizeof(char *) * (i + 1));
+	if (!data->execcmds)
+		exit(EXIT_FAILURE);
+	data->execcmds[0] = data->path;
+	data->path = NULL;
+	i = 1;
+	while (data->commandsarr[i])
+	{
         data->execcmds[i] = ft_strdup(data->commandsarr[i]);
         i++;
     }
@@ -583,8 +692,11 @@ void	executecommands(t_list *data, char **envp, int type)
         close(data->pipefd[1]);
 		// check for input redirection
 		inputredirection(data);
-        execve(data->execcmds[0], data->execcmds, envp);
-        perror(data->execcmds[0]);
+		if (data->execcmds[0] != NULL) // only execute not buildin function
+		{
+			execve(data->execcmds[0], data->execcmds, envp);
+        	perror("execve failed");
+		}
         exit(EXIT_FAILURE);
     }
     else
@@ -752,12 +864,17 @@ void	echo_out(char **str, int pos)
 {
 	char	*temp;
 	char	*expanded_cmd;
+	int		expand;
+	int		length;
 
+	expand = 1;
 	temp = ft_strdup(str[pos]);
 	if (temp == NULL)
 		exit(1);
-	expanded_cmd = expand_env_variables(temp);
-	free(temp);
+	length = ft_strlen(temp);
+	if (length >= 2 && temp[0] == '\'' && temp[length - 1] == '\'')
+		expand = 0;
+	expanded_cmd = expand_env_variables(temp, expand);
 	if (expanded_cmd)
 	{
 		remove_chars(expanded_cmd, "'\"");
@@ -1111,6 +1228,15 @@ char	*reassign_prompt(char *prompt)
 	return (s);
 }
 
+void	parse_for_comments(char **input)
+{
+	char	*hash_pos;
+
+	hash_pos = ft_strchr(*input, '#');
+	if (hash_pos != NULL)
+		*hash_pos = '\0';
+}
+
 // TODO: Refactor shell build in functions into separate functions
 void	ft_display_prompt(t_list *data, char **envp)
 {
@@ -1149,7 +1275,8 @@ void	ft_display_prompt(t_list *data, char **envp)
 			g_prompt = NULL;
 		}
 		if (!data->prompt)
-			break ;
+			return ;
+		parse_for_comments(&(data->prompt));
 		if (checkempty(data->prompt) == 0)
 		{
 			ft_add_to_history(data, data->prompt);

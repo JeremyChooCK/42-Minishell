@@ -1,0 +1,20 @@
+name: minihell tester
+
+on:
+  push:
+    branches: [ "**" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Make
+      run: make
+    - name: clone custom minihell test
+      run: git clone https://github.com/jgyy/minishell_tester
+    - name: test the entire minihell
+      run: cd minishell_tester && ./tester
+      timeout-minutes: 1
