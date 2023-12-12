@@ -13,8 +13,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Make
       run: make
-    - name: Clone tester
-      run: git clone https://github.com/LucasKuhn/minishell_tester.git
+    - name: clone custom minihell test
+      run: git clone https://github.com/jgyy/minishell_tester
     - name: test the entire minihell
       run: cd minishell_tester && ./tester
       timeout-minutes: 1
