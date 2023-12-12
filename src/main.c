@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/12 20:06:16 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/12 22:27:41 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -261,11 +261,20 @@ int	is_var_char(char c)
 	return (ft_isalnum(c) || c == '_');
 }
 
-size_t	calculate_expansion_size(char *str)
+size_t	get_var_value_size(const char *var_name)
+{
+	char	*var_value;
+
+	var_value = getenv(var_name);
+	if (!var_value)
+		var_value = "";
+	return (ft_strlen(var_value));
+}
+
+size_t	calculate_expansion_size_helper(char *str)
 {
 	char	*start;
 	char	*var_name;
-	char	*var_value;
 	size_t	total_size;
 	size_t	var_len;
 
@@ -279,10 +288,7 @@ size_t	calculate_expansion_size(char *str)
 				str++;
 			var_len = str - start;
 			var_name = ft_strndup(start, var_len);
-			var_value = getenv(var_name);
-			if (!var_value)
-				var_value = "";
-			total_size += ft_strlen(var_value);
+			total_size += get_var_value_size(var_name);
 			free(var_name);
 		}
 		else
@@ -291,7 +297,31 @@ size_t	calculate_expansion_size(char *str)
 			str++;
 		}
 	}
-	return (total_size + 1);
+	return (total_size);
+}
+
+size_t	calculate_expansion_size(char *str)
+{
+	return (calculate_expansion_size_helper(str) + 1);
+}
+
+char	*find_next_variable(char *str, size_t *var_len)
+{
+	char	*start;
+
+	while (*str)
+	{
+		if (*str == '$' && is_var_char(*(str + 1)))
+		{
+			start = ++str;
+			while (is_var_char(*str))
+				str++;
+			*var_len = str - start;
+			return (start);
+		}
+		str++;
+	}
+	return (NULL);
 }
 
 char	*expand_env_vars(char *str)
@@ -299,11 +329,11 @@ char	*expand_env_vars(char *str)
 	char	*buffer;
 	char	*src;
 	char	*dest;
-	char	*start;
 	char	*var_name;
 	char	*var_value;
+	char	*start;
 	size_t	buf_size;
-	size_t	var_len;
+	size_t var_len;
 
 	if (str == NULL)
 		return (NULL);
@@ -315,12 +345,10 @@ char	*expand_env_vars(char *str)
 	dest = buffer;
 	while (*src)
 	{
-		if (*src == '$' && is_var_char(*(src + 1)))
+		var_len = 0;
+		start = find_next_variable(src, &var_len);
+		if (start)
 		{
-			start = ++src;
-			while (is_var_char(*src))
-				src++;
-			var_len = src - start;
 			var_name = ft_strndup(start, var_len);
 			var_value = getenv(var_name);
 			if (!var_value)
@@ -328,6 +356,7 @@ char	*expand_env_vars(char *str)
 			ft_strcpy(dest, var_value);
 			dest += ft_strlen(var_value);
 			free(var_name);
+			src = start + var_len;
 		}
 		else
 			*dest++ = *src++;
