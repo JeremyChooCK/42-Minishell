@@ -15,15 +15,6 @@ jobs:
       run: make
     - name: Clone tester
       run: git clone https://github.com/LucasKuhn/minishell_tester.git
-    - name: Test builtins
-      run: cd minishell_tester && ./tester builtins
-      timeout-minutes: 1
-    - name: Test pipes
-      run: cd minishell_tester && ./tester pipes
-      timeout-minutes: 1
-    - name: Test redirects
-      run: cd minishell_tester && ./tester redirects
-      timeout-minutes: 1
-    - name: Test extras
-      run: cd minishell_tester && ./tester extras
+    - name: test the entire minihell
+      run: cd minishell_tester && ./tester
       timeout-minutes: 1
