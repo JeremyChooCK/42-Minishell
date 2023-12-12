@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/11 20:01:53 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/12 20:06:16 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -246,7 +246,7 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-char	*get_env_var(const char* name)
+char	*get_env_var(const char *name)
 {
 	char	*value;
 
@@ -261,51 +261,79 @@ int	is_var_char(char c)
 	return (ft_isalnum(c) || c == '_');
 }
 
-size_t calculate_expansion_size(const char* str) {
-    size_t total_size = 0;
-    while (*str) {
-        if (*str == '$' && is_var_char(*(str + 1))) {
-            const char* start = ++str;
-            while (is_var_char(*str)) str++;
-            size_t var_len = str - start;
-            char* var_name = strndup(start, var_len);
-            char* var_value = getenv(var_name);
-            if (!var_value) var_value = "";
-            total_size += strlen(var_value);
-            free(var_name);
-        } else {
-            total_size++;
-            str++;
-        }
-    }
-    return total_size + 1;
+size_t	calculate_expansion_size(char *str)
+{
+	char	*start;
+	char	*var_name;
+	char	*var_value;
+	size_t	total_size;
+	size_t	var_len;
+
+	total_size = 0;
+	while (*str)
+	{
+		if (*str == '$' && is_var_char(*(str + 1)))
+		{
+			start = ++str;
+			while (is_var_char(*str))
+				str++;
+			var_len = str - start;
+			var_name = ft_strndup(start, var_len);
+			var_value = getenv(var_name);
+			if (!var_value)
+				var_value = "";
+			total_size += ft_strlen(var_value);
+			free(var_name);
+		}
+		else
+		{
+			total_size++;
+			str++;
+		}
+	}
+	return (total_size + 1);
 }
 
-char* expand_env_vars(const char* str) {
-    if (str == NULL) return NULL;
-    size_t buf_size = calculate_expansion_size(str);
-    char* buffer = malloc(buf_size);
-    if (!buffer) return NULL;
-    const char* src = str;
-    char* dest = buffer;
-    while (*src) {
-        if (*src == '$' && is_var_char(*(src + 1))) {
-            const char* start = ++src;
-            while (is_var_char(*src)) src++;
-            size_t var_len = src - start;
-            char* var_name = strndup(start, var_len);
-            char* var_value = getenv(var_name);
-            if (!var_value) var_value = "";
-            strcpy(dest, var_value);
-            dest += strlen(var_value);
+char	*expand_env_vars(char *str)
+{
+	char	*buffer;
+	char	*src;
+	char	*dest;
+	char	*start;
+	char	*var_name;
+	char	*var_value;
+	size_t	buf_size;
+	size_t	var_len;
 
-            free(var_name);
-        } else {
-            *dest++ = *src++;
-        }
-    }
-    *dest = '\0';
-    return buffer;
+	if (str == NULL)
+		return (NULL);
+	buf_size = calculate_expansion_size(str);
+	buffer = malloc(buf_size);
+	if (!buffer)
+		return (NULL);
+	src = str;
+	dest = buffer;
+	while (*src)
+	{
+		if (*src == '$' && is_var_char(*(src + 1)))
+		{
+			start = ++src;
+			while (is_var_char(*src))
+				src++;
+			var_len = src - start;
+			var_name = ft_strndup(start, var_len);
+			var_value = getenv(var_name);
+			if (!var_value)
+				var_value = "";
+			ft_strcpy(dest, var_value);
+			dest += ft_strlen(var_value);
+			free(var_name);
+		}
+		else
+			*dest++ = *src++;
+	}
+	*dest = '\0';
+	return (buffer);
 }
 
 char	*expand_env_variables(char *arg, int expand)
