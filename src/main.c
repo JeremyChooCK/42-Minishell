@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/13 20:13:35 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/13 23:28:46 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -469,6 +469,42 @@ int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
 	return (0);
 }
 
+char 	*concatenate(const char *str1, const char *str2)
+{
+	char	*result;
+
+	result = malloc(ft_strlen(str1) + ft_strlen(str2) + 1);
+	ft_strcpy(result, str1);
+	ft_strcat(result, "/");
+	ft_strcat(result, str2);
+	return (result);
+}
+
+char	*find_command_in_path(char *cmd)
+{
+	char	*path;
+	char	*path_copy;
+	char	*token;
+	char	*full_path;
+
+	path = getenv("PATH");
+	path_copy = ft_strdup(path);
+	token = ft_strtok(path_copy, ':');
+	while (token != NULL)
+	{
+		full_path = concatenate(token, cmd);
+		if (access(full_path, X_OK) == 0)
+		{
+			free(path_copy);
+			return (full_path);
+		}
+		free(full_path);
+		token = ft_strtok(NULL, ':');
+	}
+	free(path_copy);
+	return (NULL);
+}
+
 int	execute_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
@@ -736,16 +772,16 @@ void	executecommands(t_list *data, char **envp, int type)
         {
 			dup2(data->pipefd[0], 0);
 			// printf("pipe stdin : %i\n", data->pipefd[0]);
-        	close(data->pipefd[0]);
+			close(data->pipefd[0]);
 		}
-        else
+		else
 		{
 			wait(&status);
 			if (WIFEXITED(status))
 				ft_setenv("?", ft_itoa(WEXITSTATUS(status)), 1);
 		}
 		wait(NULL);
-    }
+	}
 }
 
 int	checkempty(char *s)
@@ -1348,7 +1384,10 @@ void	ft_display_prompt(t_list *data, char **envp)
 						wait(NULL);
 					}
 					else
-						printf("Command not found: %s\n", data->commandsarr[0]);
+					{
+						ft_putstr_fd(" command not found\n", 2);
+						ft_setenv("?", "127", 1);
+					}
 					freesplit(data->commandsarr);
 					data->commandsarr = NULL;
 					if (data->execcmds)
