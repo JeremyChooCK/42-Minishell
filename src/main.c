@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/12 22:27:41 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/13 20:13:35 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -246,7 +246,7 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-char	*get_env_var(const char *name)
+char	*get_env_var(char *name)
 {
 	char	*value;
 
@@ -324,16 +324,40 @@ char	*find_next_variable(char *str, size_t *var_len)
 	return (NULL);
 }
 
+void	handle_variable(char **src, char **dest, char *start, size_t var_len)
+{
+	char	*var_name;
+	char	*var_value;
+
+	var_name = ft_strndup(start, var_len);
+	var_value = get_env_var(var_name);
+	ft_strcpy(*dest, var_value);
+	*dest += ft_strlen(var_value);
+	free(var_name);
+	*src = start + var_len;
+}
+
+void	process_string(char *src, char *dest)
+{
+	char	*start;
+	size_t	var_len;
+
+	while (*src)
+	{
+		var_len = 0;
+		start = find_next_variable(src, &var_len);
+		if (start)
+			handle_variable(&src, &dest, start, var_len);
+		else
+			*dest++ = *src++;
+	}
+	*dest = '\0';
+}
+
 char	*expand_env_vars(char *str)
 {
 	char	*buffer;
-	char	*src;
-	char	*dest;
-	char	*var_name;
-	char	*var_value;
-	char	*start;
 	size_t	buf_size;
-	size_t var_len;
 
 	if (str == NULL)
 		return (NULL);
@@ -341,27 +365,7 @@ char	*expand_env_vars(char *str)
 	buffer = malloc(buf_size);
 	if (!buffer)
 		return (NULL);
-	src = str;
-	dest = buffer;
-	while (*src)
-	{
-		var_len = 0;
-		start = find_next_variable(src, &var_len);
-		if (start)
-		{
-			var_name = ft_strndup(start, var_len);
-			var_value = getenv(var_name);
-			if (!var_value)
-				var_value = "";
-			ft_strcpy(dest, var_value);
-			dest += ft_strlen(var_value);
-			free(var_name);
-			src = start + var_len;
-		}
-		else
-			*dest++ = *src++;
-	}
-	*dest = '\0';
+	process_string(str, buffer);
 	return (buffer);
 }
 
@@ -449,10 +453,7 @@ int	expand_variables_and_count_pipes(
 	{
 		expanded_cmd = expand_env_variables(cmd_parts[i], 1);
 		if (expanded_cmd)
-		{
-			//free(cmd_parts[i]);
 			cmd_parts[i] = expanded_cmd;
-		}
 		i++;
 	}
 	*numofpipes = checkforpipe(data->prompt);
