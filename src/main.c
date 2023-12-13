@@ -607,13 +607,13 @@ void	reassign(t_list *data, int flag, int index)
 		data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
 		dup2(data->inputfd, 1);
 		close(data->inputfd);
-		// if (data->inputfd == -1)
-		// {
-		// 	// Handle the error
-		// 	perror("Error opening file");
-		// 	// You may choose to exit the program or handle the error differently
-		// 	exit(EXIT_FAILURE);
-		// }
+		if (data->inputfd == -1)
+		{
+			// Handle the error
+			perror("Error opening file");
+			// You may choose to exit the program or handle the error differently
+			exit(EXIT_FAILURE);
+		}
 		while (data->execcmds[i])
 			i++;
 		result = malloc(sizeof(char *) * (i + 1 - 2)); // minus the > and outfile
@@ -633,7 +633,7 @@ void	reassign(t_list *data, int flag, int index)
 		data->execcmds = result;
 		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
 		{
-			if (ft_strcmp(data->commandsarr[0], ">") == 0)
+			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], ">") == 0)
 				free(data->commandsarr[0]);
 			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 		}
