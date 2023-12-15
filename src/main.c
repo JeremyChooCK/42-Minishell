@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/15 20:03:44 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/15 22:58:45 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -394,6 +394,72 @@ void	freesplit(char **s)
 	s = NULL;
 }
 
+static int	is_delimiter(char c, char quote)
+{
+	return (c == ' ' && quote == 0);
+}
+
+static int	count_words(const char *str)
+{
+	int count = 0;
+	char quote = 0;
+
+	while (*str)
+	{
+		while (*str && is_delimiter(*str, quote))
+			str++;
+		if (*str)
+			count++;
+		while (*str && (!is_delimiter(*str, quote) || quote))
+		{
+			if ((*str == '\'' || *str == '\"') && quote == 0)
+				quote = *str;
+			else if (*str == quote)
+				quote = 0;
+			str++;
+		}
+	}
+	return count;
+}
+
+static char	*extract_word(const char **str)
+{
+	const char *start;
+	char quote = 0;
+	int length = 0;
+
+	while (**str && is_delimiter(**str, quote))
+		(*str)++;
+	start = *str;
+	while (**str && (!is_delimiter(**str, quote) || quote))
+	{
+		if ((**str == '\'' || **str == '\"') && quote == 0)
+			quote = **str;
+		else if (**str == quote)
+			quote = 0;
+		(*str)++;
+		length++;
+	}
+	return strndup(start, length);
+}
+
+char	**ft_split_custom(const char *s)
+{
+	if (!s)
+		return NULL;
+	int words = count_words(s);
+	char **result = (char **)malloc(sizeof(char *) * (words + 1));
+	if (!result)
+		return NULL;
+
+	const char *str = s;
+	for (int i = 0; i < words; i++)
+		result[i] = extract_word(&str);
+	result[words] = NULL;
+
+	return result;
+}
+
 int	process_and_split_command(t_list *data, char ***cmd_parts)
 {
 	if (process_quotes(data->prompt) < 0)
@@ -401,7 +467,7 @@ int	process_and_split_command(t_list *data, char ***cmd_parts)
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
 		return (-1);
 	}
-	*cmd_parts = ft_split(data->prompt, ' ');
+	*cmd_parts = ft_split_custom(data->prompt);
 	if (!*cmd_parts)
 	{
 		ft_putstr_fd("Error splitting command input.\n", 2);
