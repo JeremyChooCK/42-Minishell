@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/13 23:28:46 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/15 20:03:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -176,38 +176,6 @@ char	*perform_replacement(
 	}
 	ft_strcpy(result_tmp, orig);
 	return (result);
-}
-
-char	*str_replace(char *orig, char *rep, char *with)
-{
-	int	count;
-
-	if (!orig || !rep || ft_strlen(rep) == 0)
-		return (NULL);
-	if (!with)
-		with = "";
-	count = count_substring(orig, rep);
-	return (perform_replacement(orig, rep, with, count));
-}
-
-void	replace_exit_status(char **command, char *exit_status)
-{
-	char	*new_command;
-	char	*temp;
-	int		i;
-
-	i = 0;
-	while (command[i] != NULL)
-	{
-		new_command = str_replace(command[i], "$?", exit_status);
-		if (new_command != NULL)
-		{
-			temp = command[i];
-			command[i] = new_command;
-			free(temp);
-		}
-		i++;
-	}
 }
 
 int	toggle_quote_state(int quote_state, char current_char)
@@ -469,7 +437,7 @@ int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
 	return (0);
 }
 
-char 	*concatenate(const char *str1, const char *str2)
+char	*concatenate(const char *str1, const char *str2)
 {
 	char	*result;
 
@@ -505,35 +473,72 @@ char	*find_command_in_path(char *cmd)
 	return (NULL);
 }
 
+char	*str_replace(char *orig, char *rep, char *with)
+{
+	int	count;
+
+	if (!orig || !rep || ft_strlen(rep) == 0)
+		return (NULL);
+	if (!with)
+		with = "";
+	count = count_substring(orig, rep);
+	return (perform_replacement(orig, rep, with, count));
+}
+
+void	replace_exit_status(char **command, char *exit_status)
+{
+	char	*new_command;
+	char	*temp;
+	int		i;
+
+	i = 0;
+	while (command[i] != NULL)
+	{
+		new_command = str_replace(command[i], "$?", exit_status);
+		if (new_command != NULL)
+		{
+			temp = command[i];
+			command[i] = new_command;
+			free(temp);
+		}
+		i++;
+	}
+}
+
+int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
+{
+	char	*temp;
+	char	**strarr;
+	int		type;
+
+	type = 1;
+	temp = reassign_prompt(data->prompt);
+	strarr = ft_split(temp, '|');
+	while (data->i < numofpipes + 1)
+	{
+		data->commandsarr = ft_split(strarr[data->i], ' ');
+		data->path = ft_getpath(data);
+		if (data->i == numofpipes)
+			type = 2;
+		executecommands(data, envp, type);
+		freesplit(data->execcmds);
+		data->execcmds = NULL;
+		data->i++;
+	}
+	dup2(data->stdin, STDIN_FILENO);
+	dup2(data->stdout, STDOUT_FILENO);
+	return (1);
+}
+
 int	execute_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
 	char	*exit_status;
-	char	**strarr;
-	int		type;
 	int		result;
 
 	result = 0;
 	if (numofpipes)
-	{
-		type = 1;
-		temp = reassign_prompt(data->prompt);
-		strarr = ft_split(temp, '|');
-		while (data->i < numofpipes + 1)
-		{
-			data->commandsarr = ft_split(strarr[data->i], ' ');
-			data->path = ft_getpath(data);
-			if (data->i == numofpipes)
-				type = 2;
-			executecommands(data, envp, type);
-			freesplit(data->execcmds);
-			data->execcmds = NULL;
-			data->i++;
-		}
-		dup2(data->stdin, STDIN_FILENO);
-		dup2(data->stdout, STDOUT_FILENO);
-		result = 1;
-	}
+		result = execute_piped_commands(data, envp, numofpipes);
 	else
 	{
 		temp = reassign_prompt(data->prompt);
@@ -566,7 +571,7 @@ void	remove_quotes_from_arg(char *arg)
 
 	len = ft_strlen(arg);
 	if (len > 1 && ((arg[0] == '"' && arg[len - 1] == '"')
-		|| (arg[0] == '\'' && arg[len - 1] == '\'')))
+			|| (arg[0] == '\'' && arg[len - 1] == '\'')))
 	{
 		ft_memmove(arg, arg + 1, len - 2);
 		arg[len - 2] = '\0';
@@ -585,30 +590,32 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-void handle_heredoc(char* delimiter) {
+void	handle_heredoc(char* delimiter)
+{
     // Create a temporary file to store the heredoc content
-    char tmpfile[] = "/tmp/heredocXXXXXX";
-    int tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
+    char	tmpfile[] = "/tmp/heredocXXXXXX";
+    int		tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
 	char	*input;
+	int		heredocfd;
 
-    if (tmpfd == -1) {
+    if (tmpfd == -1)
+	{
         perror("Error creating temporary file");
         exit(EXIT_FAILURE);
     }
-
     // Prompt the user for input until the delimiter is entered
-       while (1) {
+	while (1)
+	{
         input = readline("> ");
-        if (!input) {
+        if (!input)
+		{
             // Handle the case where the user presses Ctrl-D (EOF)
             printf("\n");
-            break;
+            break ;
         }
-
         // Check if the delimiter is entered
-        if (strcmp(input, delimiter) == 0) {
-            break;
-        }
+		if (ft_strcmp(input, delimiter) == 0)
+			break ;
         // Write the input to the temporary file
         if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1)) {
             perror("Error writing to temporary file");
@@ -619,22 +626,23 @@ void handle_heredoc(char* delimiter) {
 		// TODO: add input to history
 		free(input);
     }
-
     // Close the temporary file
-    if (close(tmpfd) == -1) {
+    if (close(tmpfd) == -1)
+	{
         perror("Error closing temporary file");
         unlink(tmpfile);  // Remove the temporary file
         exit(EXIT_FAILURE);
     }
-
 	// Redirect stdin to the temporary file
-	int heredocfd = open(tmpfile, O_RDONLY);
-	if (heredocfd == -1) {
+	heredocfd = open(tmpfile, O_RDONLY);
+	if (heredocfd == -1)
+	{
 		perror("Error opening temporary file for heredoc");
 		unlink(tmpfile);  // Remove the temporary file
 		exit(EXIT_FAILURE);
 	}
-	if (dup2(heredocfd, STDIN_FILENO) == -1) {
+	if (dup2(heredocfd, STDIN_FILENO) == -1)
+	{
 		perror("Error redirecting stdin");
 		close(heredocfd);
 		unlink(tmpfile);
