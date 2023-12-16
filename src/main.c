@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 04:05:48 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 04:33:01 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -76,6 +76,7 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 	int	j;
 
 	j = 0;
+	printf("(%s)", data->commandsarr[0]);
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
 		|| ft_strcmp(data->commandsarr[0], "<<") == 0
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
@@ -1518,8 +1519,7 @@ char *reassign_prompt(char *prompt)
             in_single_quote = !in_single_quote;
         if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
             in_double_quote = !in_double_quote;
-
-        if (!in_single_quote && !in_double_quote) 
+        if (!in_single_quote && !in_double_quote)
         {
             if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<')
                 len += 2;
