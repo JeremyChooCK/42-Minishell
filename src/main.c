@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 15:43:33 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/16 17:53:40 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -576,11 +576,9 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-// TODO add input to history
-int	create_and_write_heredoc(char *delimiter, char *tmpfile)
+int	open_temp_file(const char *tmpfile)
 {
-	int		tmpfd;
-	char	*input;
+	int	tmpfd;
 
 	tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
 	if (tmpfd == -1)
@@ -588,6 +586,14 @@ int	create_and_write_heredoc(char *delimiter, char *tmpfile)
 		perror("Error creating temporary file");
 		return (-1);
 	}
+	return (tmpfd);
+}
+
+int	write_user_input_to_file(
+	int tmpfd, const char *delimiter, const char *tmpfile)
+{
+	char	*input;
+
 	while (1)
 	{
 		input = readline("> ");
@@ -597,16 +603,35 @@ int	create_and_write_heredoc(char *delimiter, char *tmpfile)
 			break ;
 		}
 		if (ft_strcmp(input, delimiter) == 0)
+		{
+			free(input);
 			break ;
+		}
 		if (write(tmpfd, input, ft_strlen(input)) == -1
 			|| write(tmpfd, "\n", 1) == -1)
 		{
 			perror("Error writing to temporary file");
 			close(tmpfd);
 			unlink(tmpfile);
+			free(input);
 			return (-1);
 		}
 		free(input);
+	}
+	return (0);
+}
+
+int	create_and_write_heredoc(char *delimiter, const char *tmpfile)
+{
+	int	tmpfd;
+
+	tmpfd = open_temp_file(tmpfile);
+	if (tmpfd == -1)
+		return (-1);
+	if (write_user_input_to_file(tmpfd, delimiter, tmpfile) == -1)
+	{
+		close(tmpfd);
+		return (-1);
 	}
 	return (tmpfd);
 }
