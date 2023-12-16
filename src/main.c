@@ -511,6 +511,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 		data->execcmds = NULL;
 		data->i++;
 	}
+	data->i = 0;
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
 	return (1);
@@ -721,6 +722,13 @@ void	reassign(t_list *data, int flag, int index)
 		}
 		s[j] = '\0';
 		data->inputfd = open(s, O_RDONLY);
+		if (data->inputfd == -1)
+		{
+			// Handle the error
+			perror("Error opening file");
+			// You may choose to exit the program or handle the error differently
+			exit(EXIT_FAILURE);
+		}
 		free(s);
 		dup2(data->inputfd, 0);
 		close(data->inputfd);
