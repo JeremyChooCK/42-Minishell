@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 05:11:28 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 06:22:12 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -83,9 +83,9 @@ void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
 void	inputredirection(t_list *data);
 char	*reassign_prompt(char *prompt);
-int	ft_echo(char **args);
-int	checkdir(char **args);
-int	ft_pwd(void);
+int		ft_echo(char **args);
+int		checkdir(char **args);
+int		ft_pwd(void);
 void	ft_export(char *arg, t_env_list **env_list);
 void	ft_unset(char **args, t_env_list **env_list);
 void	ft_env(t_env_list *env_vars);

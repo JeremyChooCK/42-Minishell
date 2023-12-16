@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 05:14:20 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 06:21:14 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1606,6 +1606,65 @@ void	parse_for_comments(char **input)
 		*hash_pos = '\0';
 }
 
+void	execute_command(t_list *data, char **envp)
+{
+	if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+		ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+	else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+		ft_setenv("?", ft_itoa(ft_pwd()), 1);
+	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+		ft_export(data->commandsarr[1], &(data->env_vars));
+	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+		ft_unset(data->commandsarr + 1, &(data->env_vars));
+	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+		ft_env(data->env_vars);
+	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+	{
+		free(data->path);
+		if (data->prompt != NULL)
+		{
+			free(data->prompt);
+			data->prompt = NULL;
+		}
+		ft_exit(data->commandsarr);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+		ft_display_history(data);
+	else
+	{
+		data->path = ft_getpath(data);
+		if (data->path)
+		{
+			executecommands(data, envp, 0);
+			wait(NULL);
+		}
+		else
+		{
+			ft_putstr_fd(" command not found\n", 2);
+			ft_setenv("?", "127", 1);
+		}
+		ft_freesplit(data->commandsarr);
+		data->commandsarr = NULL;
+		if (data->execcmds)
+		{
+			ft_freesplit(data->execcmds);
+			data->execcmds = NULL;
+		}
+	}
+}
+
+void	cleanup_command(t_list *data)
+{
+	free(data->path);
+	if (data->prompt != NULL)
+	{
+		free(data->prompt);
+		data->prompt = NULL;
+	}
+}
+
 void	handle_command(t_list *data, char **envp)
 {
 	parse_for_comments(&(data->prompt));
@@ -1614,62 +1673,11 @@ void	handle_command(t_list *data, char **envp)
 		ft_add_to_history(data, data->prompt);
 		add_history(data->prompt);
 		if (getcmd(data, envp) == 0)
-		{
-			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-				ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
-			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-				ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
-			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-				ft_setenv("?", ft_itoa(ft_pwd()), 1);
-			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-				ft_export(data->commandsarr[1], &(data->env_vars));
-			else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-				ft_unset(data->commandsarr + 1, &(data->env_vars));
-			else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-				ft_env(data->env_vars);
-			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-			{
-				free(data->path);
-				if (data->prompt != NULL)
-				{
-					free(data->prompt);
-					data->prompt = NULL;
-				}
-				ft_exit(data->commandsarr);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-				ft_display_history(data);
-			else
-			{
-				data->path = ft_getpath(data);
-				if (data->path)
-				{
-					executecommands(data, envp, 0);
-					wait(NULL);
-				}
-				else
-				{
-					ft_putstr_fd(" command not found\n", 2);
-					ft_setenv("?", "127", 1);
-				}
-				ft_freesplit(data->commandsarr);
-				data->commandsarr = NULL;
-				if (data->execcmds)
-				{
-					ft_freesplit(data->execcmds);
-					data->execcmds = NULL;
-				}
-			}
-		}
+			execute_command(data, envp);
 	}
 	else
 		ft_setenv("?", "0", 1);
-	free(data->path);
-	if (data->prompt != NULL)
-	{
-		free(data->prompt);
-		data->prompt = NULL;
-	}
+	cleanup_command(data);
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
