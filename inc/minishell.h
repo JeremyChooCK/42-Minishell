@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/15 19:32:06 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 05:11:28 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -29,6 +29,7 @@
 # include <readline/history.h>
 
 # define NAME_SIZE 256
+# define MAX_INPUT_LENGTH 1024
 
 extern char	**environ;
 
