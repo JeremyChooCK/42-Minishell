@@ -794,6 +794,13 @@ void	reassign(t_list *data, int flag, int index)
 	else if (flag == 2) // ">" "infile"
 	{
 		data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
+		if (data->inputfd == -1)
+		{
+			// Handle the error
+			perror("Error opening file");
+			// You may choose to exit the program or handle the error differently
+			exit(EXIT_FAILURE);
+		}
 		dup2(data->inputfd, 1);
 		close(data->inputfd);
 		if (data->inputfd == -1)
@@ -904,8 +911,6 @@ void	executecommands(t_list *data, char **envp, int type)
 	int	i;
 	int	status;
 
-	if (pipe(data->pipefd) == -1)
-		exit(EXIT_FAILURE);
 	i = 0;
 	while (data->commandsarr[i])
 		i++;
@@ -928,9 +933,12 @@ void	executecommands(t_list *data, char **envp, int type)
 		//TODO : update &status
 		return ;
 	}
+	if (pipe(data->pipefd) == -1)
+		exit(EXIT_FAILURE);
     id = fork();
     if (id == 0)
     {
+			inputredirection(data);
 			if (type == 1)
 			{
 				dup2(data->pipefd[1], 1);
@@ -944,7 +952,6 @@ void	executecommands(t_list *data, char **envp, int type)
 			close(data->pipefd[0]);
 			close(data->pipefd[1]);
 			// check for input redirection
-			inputredirection(data);
 		if (data->commandsarr[0])
 		{
 			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
