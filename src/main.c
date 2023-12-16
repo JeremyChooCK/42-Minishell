@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 04:33:01 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 05:14:20 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -76,7 +76,6 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 	int	j;
 
 	j = 0;
-	printf("(%s)", data->commandsarr[0]);
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
 		|| ft_strcmp(data->commandsarr[0], "<<") == 0
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
@@ -1176,37 +1175,37 @@ int	checkdir(char **args)
 	return (0);
 }
 
-void	remove_chars(char *str, const char *chars_to_remove)
+void	parse_and_print_echo(char *input)
 {
-	int	i;
-	int	j;
-	int	k;
-	int	len;
-	int	should_remove;
-	int	remove_len;
+    int in_single_quote;
+    int in_double_quote;
+    char output[MAX_INPUT_LENGTH] = {0};
+    int output_index = 0;
 
-	len = ft_strlen(str);
-	remove_len = ft_strlen(chars_to_remove);
-	i = 0;
-	j = 0;
-	while (i < len)
-	{
-		should_remove = 0;
-		k = 0;
-		while (k < remove_len)
-		{
-			if (str[i] == chars_to_remove[k])
-			{
-				should_remove = 1;
-				break ;
-			}
-			k++;
-		}
-		if (!should_remove)
-			str[j++] = str[i];
-		i++;
-	}
-	str[j] = '\0';
+	in_single_quote = 0;
+	in_double_quote = 0;
+    for (int i = 0; i < (int)ft_strlen(input); ++i) {
+        if (input[i] == '\'' && !in_double_quote) {
+            in_single_quote = !in_single_quote;
+            continue;
+        }
+
+        if (input[i] == '\"' && !in_single_quote) {
+            in_double_quote = !in_double_quote;
+            continue;
+        }
+
+        if (input[i] == ' ' && !in_single_quote && !in_double_quote) {
+            if (output_index > 0 && output[output_index - 1] != ' ') {
+                output[output_index++] = ' ';
+            }
+            continue;
+        }
+
+        output[output_index++] = input[i];
+    }
+
+    printf("%s", output);
 }
 
 void	echo_out(char **str, int pos)
@@ -1226,8 +1225,7 @@ void	echo_out(char **str, int pos)
 	expanded_cmd = expand_env_variables(temp, expand);
 	if (expanded_cmd)
 	{
-		remove_chars(expanded_cmd, "'\"");
-		printf("%s", expanded_cmd);
+		parse_and_print_echo(expanded_cmd);
 		free(expanded_cmd);
 	}
 }
