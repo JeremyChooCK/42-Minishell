@@ -6,33 +6,27 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 23:25:23 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/16 23:44:29 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-// TODO signals needs to be fixed
-void	ft_sigint_handler(int sig)
+void	signal_cmd(int sig)
 {
-	(void)sig;
-	printf("\nminishell$> ");
-}
-
-void	ft_sigquit_handler(int sig)
-{
-	(void)sig;
-}
-
-void	ft_setup_signal_handlers(void)
-{
-	struct sigaction	sa;
-
-	sa.sa_handler = ft_sigint_handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sigaction(SIGINT, &sa, NULL);
-	sa.sa_handler = ft_sigquit_handler;
-	sigaction(SIGQUIT, &sa, NULL);
+	ft_setenv("?", ft_itoa(sig), 1);
+	if (sig == 2)
+	{
+		ft_setenv("?", "130", 1);
+		printf("\n");
+		rl_on_new_line();
+		rl_replace_line("", 0);
+		rl_redisplay();
+	}
+	if (sig == SIGQUIT)
+	{
+		ft_putstr_fd("Quit (core dumped)\n", 2);
+		exit(1);
+	}
 }
 
 char	**split_and_validate_path(char *path)
@@ -1571,6 +1565,8 @@ void	ft_display_prompt(t_list *data, char **envp)
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             ft_strncpy(cwd, "unknown", sizeof(cwd));
         data->prompt = readline("minishell$> ");
+		signal(SIGINT, signal_cmd);
+		signal(SIGQUIT, SIG_IGN);
 		if (!data->prompt)
 			return ;
 		parse_for_comments(&(data->prompt));
@@ -1705,7 +1701,6 @@ int	main(int argc, char **argv, char **envp)
 {
 	t_list	*data;
 
-	ft_setup_signal_handlers();
 	if (!argc && !argv)
 		return (0);
 	ft_setenv("?", "0", 1);
@@ -1715,6 +1710,8 @@ int	main(int argc, char **argv, char **envp)
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
 	ft_init_t_env(envp, &(data->env_vars));
+	signal(SIGINT, signal_cmd);
+	signal(SIGQUIT, SIG_IGN);
 	ft_display_prompt(data, envp);
 	if (data != NULL)
 	{
