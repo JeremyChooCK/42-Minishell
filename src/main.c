@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 00:28:54 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 01:48:45 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -699,11 +699,7 @@ void	handle_append_redirection(char *filename)
 {
 	int	fd;
 
-	fd = open(
-			filename,
-			O_WRONLY | O_CREAT | O_APPEND,
-			S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
-			);
+	fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (fd == -1)
 	{
 		perror("Error opening file for append");
@@ -936,9 +932,10 @@ void	outputredirection(t_list *data)
 
 void	executecommands(t_list *data, char **envp, int type)
 {
-	int	id;
-	int	i;
-	int	status;
+	int			id;
+	int			i;
+	int			status;
+	struct stat	buff;
 
 	i = 0;
 	while (data->commandsarr[i])
@@ -949,8 +946,8 @@ void	executecommands(t_list *data, char **envp, int type)
 	data->execcmds[0] = data->path;
 	if (data->execcmds[0] == NULL)
 	{
-		write(2, data->commandsarr[0], ft_strlen(data->commandsarr[0]));
-		write(2, ": command not found\n", 20);
+		ft_putstr_fd(data->commandsarr[0], 2);
+		ft_putstr_fd(": command not found\n", 2);
 		return ;
 	}
 	data->path = NULL;
@@ -1032,8 +1029,15 @@ void	executecommands(t_list *data, char **envp, int type)
 		if (data->execcmds[0] != NULL) // only execute not buildin function
 		{
 			execve(data->execcmds[0], data->execcmds, envp);
-        	perror("execve failed");
+			if (stat(data->execcmds[0], &buff) == 0)
+			{
+				ft_putstr_fd("minishell: ", 2);
+				ft_putstr_fd(data->execcmds[0], 2);
+				ft_putstr_fd(": Permission denied\n", 2);
+				exit(126);
+			}
 		}
+		ft_setenv("?", ft_itoa(EXIT_FAILURE), 1);
         exit(EXIT_FAILURE);
     }
     else
@@ -1636,8 +1640,6 @@ void	ft_display_prompt(t_list *data, char **envp)
 				else
 				{
 					data->path = ft_getpath(data);
-					if (data->prompt && *data->prompt)
-						add_history(data->prompt);
 					if (data->path)
 					{
 						executecommands(data, envp, 0);
