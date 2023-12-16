@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 02:21:37 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 03:45:57 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -76,6 +76,7 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 	int	j;
 
 	j = 0;
+	printf("(%s)", data->commandsarr[0]);
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
 		|| ft_strcmp(data->commandsarr[0], "<<") == 0
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
@@ -1501,79 +1502,102 @@ void	ft_exit(char **args)
 	exit(exit_status);
 }
 
-char	*reassign_prompt(char *prompt)
+char *reassign_prompt(char *prompt)
 {
-	int	i;
-	int	j;
-	int	len;
-	char	*s;
+    int i, j, len;
+    char *s;
+    int in_single_quote = 0; // Flag for single quotes
+    int in_double_quote = 0; // Flag for double quotes
 
-	if (prompt == NULL)
-		return NULL;
-	len = ft_strlen(prompt);
-	i = 0;
-	while (prompt[i])
-	{
-		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
-			len += 2;
-		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-			len += 2;
-		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if << is present
-			len += 2;
-		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-			len += 2;
-		i++;
-	}
-	s = malloc(sizeof(char) * (len + 1));
-	i = 0;
-	j = 0;
-	while (prompt[i])
-	{
-		s[i + j] = prompt[i];
-		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = ' ';
-			j--;
-			i++;
-		}
-		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = ' ';
-		}
-		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = ' ';
-			j--;
-			i++;
-		}
-		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = ' ';
-		}
-		i++;
-	}
-	s[i + j] = '\0';
-	return (s);
+    if (prompt == NULL)
+        return NULL;
+
+    len = ft_strlen(prompt);
+    for (i = 0; prompt[i]; i++)
+    {
+        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+            in_single_quote = !in_single_quote;
+        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+            in_double_quote = !in_double_quote;
+
+        if (!in_single_quote && !in_double_quote)
+        {
+            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<')
+                len += 2;
+            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+                len += 2;
+            if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>')
+                len += 2;
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+                len += 2;
+        }
+    }
+
+    s = malloc(sizeof(char) * (len + 1));
+    if (!s) return NULL;
+
+    in_single_quote = 0;
+    in_double_quote = 0;
+    for (i = 0, j = 0; prompt[i]; i++)
+    {
+        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+            in_single_quote = !in_single_quote;
+        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+            in_double_quote = !in_double_quote;
+
+        if (!in_single_quote && !in_double_quote)
+        {
+            s[i + j] = prompt[i];
+            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = ' ';
+                j--;
+                i++;
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = ' ';
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = ' ';
+                j--;
+                i++;
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = ' ';
+            }
+        }
+        else
+        {
+            // Simply copy the character
+            s[i + j] = prompt[i];
+        }
+    }
+
+    s[i + j] = '\0';
+    return s;
 }
 
 void	parse_for_comments(char **input)
