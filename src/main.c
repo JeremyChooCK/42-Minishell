@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 23:44:29 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 00:28:54 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -26,6 +26,18 @@ void	signal_cmd(int sig)
 	{
 		ft_putstr_fd("Quit (core dumped)\n", 2);
 		exit(1);
+	}
+}
+
+void	signal_cmd_2(int sig)
+{
+	ft_setenv("?", ft_itoa(sig), 1);
+	if (sig == 2)
+	{
+		ft_setenv("?", "130", 1);
+		printf("\n");
+		rl_replace_line("", 0);
+		rl_redisplay();
 	}
 }
 
@@ -935,28 +947,26 @@ void	executecommands(t_list *data, char **envp, int type)
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
 		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
-		//TODO : update &status
 		return ;
 	}
 	if (pipe(data->pipefd) == -1)
 		exit(EXIT_FAILURE);
+	signal(SIGINT, SIG_IGN);
+	signal(SIGQUIT, SIG_IGN);
     id = fork();
+	if (id == -1)
+		exit(1);
     if (id == 0)
     {
-			inputredirection(data);
-			if (type == 1)
-			{
-				dup2(data->pipefd[1], 1);
-				// printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
-			}
-			if (type == 2)
-			{
-				dup2(data->stdout, 1);
-				// printf("write to pipe2 stdout : %i\n", data->stdout);
-			}
-			close(data->pipefd[0]);
-			close(data->pipefd[1]);
-			// check for input redirection
+		signal(SIGINT, SIG_DFL);
+		signal(SIGQUIT, SIG_DFL);
+		inputredirection(data);
+		if (type == 1)
+			dup2(data->pipefd[1], 1);
+		if (type == 2)
+			dup2(data->stdout, 1);
+		close(data->pipefd[0]);
+		close(data->pipefd[1]);
 		if (data->commandsarr[0])
 		{
 			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
@@ -1008,7 +1018,9 @@ void	executecommands(t_list *data, char **envp, int type)
         exit(EXIT_FAILURE);
     }
     else
-    {
+	{
+		signal(SIGINT, signal_cmd_2);
+		signal(SIGQUIT, SIG_IGN);
         close(data->pipefd[1]);
         if (type == 1)
         {
@@ -1023,6 +1035,8 @@ void	executecommands(t_list *data, char **envp, int type)
 				ft_setenv("?", ft_itoa(WEXITSTATUS(status)), 1);
 		}
 		wait(NULL);
+		signal(SIGINT, signal_cmd);
+		signal(SIGQUIT, SIG_IGN);
 	}
 }
 
