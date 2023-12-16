@@ -592,10 +592,11 @@ int	open_temp_file(const char *tmpfile)
 }
 
 // heredoc function
-char	*read_and_process_input(const char *delimiter)
+char	*read_and_process_input(const char *delimiter, t_list *data)
 {
 	char	*input;
 
+	dup2(data->stdin, 0);
 	input = readline("> ");
 	if (!input || ft_strcmp(input, delimiter) == 0)
 	{
@@ -620,13 +621,13 @@ int	write_to_file(int tmpfd, const char *input, const char *tmpfile)
 }
 
 int	write_user_input_to_file(
-	int tmpfd, const char *delimiter, const char *tmpfile)
+	int tmpfd, const char *delimiter, const char *tmpfile, t_list *data)
 {
 	char	*input;
 
 	while (1)
 	{
-		input = read_and_process_input(delimiter);
+		input = read_and_process_input(delimiter, data);
 		if (!input)
 			break ;
 		if (write_to_file(tmpfd, input, tmpfile) == -1)
@@ -639,14 +640,14 @@ int	write_user_input_to_file(
 	return (0);
 }
 
-int	create_and_write_heredoc(char *delimiter, const char *tmpfile)
+int	create_and_write_heredoc(char *delimiter, const char *tmpfile, t_list *data)
 {
 	int	tmpfd;
 
 	tmpfd = open_temp_file(tmpfile);
 	if (tmpfd == -1)
 		return (-1);
-	if (write_user_input_to_file(tmpfd, delimiter, tmpfile) == -1)
+	if (write_user_input_to_file(tmpfd, delimiter, tmpfile, data) == -1)
 	{
 		close(tmpfd);
 		return (-1);
@@ -682,13 +683,13 @@ void	setup_heredoc_fd(int tmpfd, char *tmpfile)
 	unlink(tmpfile);
 }
 
-void	handle_heredoc(char *delimiter)
+void	handle_heredoc(char *delimiter, t_list *data)
 {
 	char	*tmpfile;
 	int		tmpfd;
 
 	tmpfile = "/tmp/heredocXXXXXX";
-	tmpfd = create_and_write_heredoc(delimiter, tmpfile);
+	tmpfd = create_and_write_heredoc(delimiter, tmpfile, data);
 	if (tmpfd == -1)
 		exit(EXIT_FAILURE);
 	setup_heredoc_fd(tmpfd, tmpfile);
@@ -782,7 +783,7 @@ void	reassign(t_list *data, int flag, int index)
 	{
 		if (data->execcmds[index + 1] == NULL)
 			return ;
-		handle_heredoc(data->execcmds[index + 1]);
+		handle_heredoc(data->execcmds[index + 1], data);
 		free(data->execcmds[index]);
 		free(data->execcmds[index + 1]);
 		i = 2;
@@ -908,7 +909,18 @@ void	inputredirection(t_list *data)
 			reassign(data, 1, i);
 			i = -1;
 		}
-		else if (ft_strcmp(data->execcmds[i], ">") == 0) // check for ">" "infile"
+		i++;
+	}
+}
+
+void	outputredirection(t_list *data)
+{
+	int	i;
+
+	i = 0;
+	while (data->execcmds[i])
+	{
+		if (ft_strcmp(data->execcmds[i], ">") == 0) // check for ">" "infile"
 		{
 			reassign(data, 2, i);
 			i = -1;
@@ -935,6 +947,12 @@ void	executecommands(t_list *data, char **envp, int type)
 	if (!data->execcmds)
 		exit(EXIT_FAILURE);
 	data->execcmds[0] = data->path;
+	if (data->execcmds[0] == NULL)
+	{
+		write(2, data->commandsarr[0], ft_strlen(data->commandsarr[0]));
+		write(2, ": command not found\n", 20);
+		return ;
+	}
 	data->path = NULL;
 	i = 1;
 	while (data->commandsarr[i])
@@ -965,6 +983,7 @@ void	executecommands(t_list *data, char **envp, int type)
 			dup2(data->pipefd[1], 1);
 		if (type == 2)
 			dup2(data->stdout, 1);
+		outputredirection(data);
 		close(data->pipefd[0]);
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
