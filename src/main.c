@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 12:31:10 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/16 15:43:33 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -576,84 +576,102 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-void handle_heredoc(char* delimiter) {
-    // Create a temporary file to store the heredoc content
-    char tmpfile[] = "/tmp/heredocXXXXXX";
-    int tmpfd;
+// TODO add input to history
+int	create_and_write_heredoc(char *delimiter, char *tmpfile)
+{
+	int		tmpfd;
 	char	*input;
-	int	heredocfd;
 
 	tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
-    if (tmpfd == -1) {
-        perror("Error creating temporary file");
-        exit(EXIT_FAILURE);
-    }
-
-    while (1) {
-        input = readline("> ");
-        if (!input) {
-            // Handle the case where the user presses Ctrl-D (EOF)
-            printf("\n");
-            break;
-        }
-
-        // Check if the delimiter is entered
-        if (ft_strcmp(input, delimiter) == 0) {
-            break;
-        }
-        // Write the input to the temporary file
-        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1)) {
-            perror("Error writing to temporary file");
-            close(tmpfd);  // Close the temporary file before exiting
-            unlink(tmpfile);  // Remove the temporary file
-            exit(EXIT_FAILURE);
-        }
-		//   TODO :add input to history
+	if (tmpfd == -1)
+	{
+		perror("Error creating temporary file");
+		return (-1);
+	}
+	while (1)
+	{
+		input = readline("> ");
+		if (!input)
+		{
+			printf("\n");
+			break ;
+		}
+		if (ft_strcmp(input, delimiter) == 0)
+			break ;
+		if (write(tmpfd, input, ft_strlen(input)) == -1
+			|| write(tmpfd, "\n", 1) == -1)
+		{
+			perror("Error writing to temporary file");
+			close(tmpfd);
+			unlink(tmpfile);
+			return (-1);
+		}
 		free(input);
-    }
-
-    // Close the temporary file
-    if (close(tmpfd) == -1) {
-        perror("Error closing temporary file");
-        unlink(tmpfile);  // Remove the temporary file
-        exit(EXIT_FAILURE);
-    }
-
-        // Redirect stdin to the temporary file
-        heredocfd = open(tmpfile, O_RDONLY);
-        if (heredocfd == -1) {
-            perror("Error opening temporary file for heredoc");
-            unlink(tmpfile);  // Remove the temporary file
-            exit(EXIT_FAILURE);
-        }
-        if (dup2(heredocfd, STDIN_FILENO) == -1) {
-            perror("Error redirecting stdin");
-            close(heredocfd);
-            unlink(tmpfile);
-            exit(EXIT_FAILURE);
-        }
-        close(heredocfd);
-		unlink(tmpfile);
+	}
+	return (tmpfd);
 }
 
-void handle_append_redirection(char* filename) {
-    // Open the file for append
-    int fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+void	setup_heredoc_fd(int tmpfd, char *tmpfile)
+{
+	int	heredocfd;
 
-    if (fd == -1) {
-        perror("Error opening file for append");
-        exit(EXIT_FAILURE);
-    }
+	if (close(tmpfd) == -1)
+    {
+		perror("Error closing temporary file");
+		unlink(tmpfile);
+		exit(EXIT_FAILURE);
+	}
+	heredocfd = open(tmpfile, O_RDONLY);
+	if (heredocfd == -1)
+	{
+		perror("Error opening temporary file for heredoc");
+		unlink(tmpfile);
+		exit(EXIT_FAILURE);
+	}
+	if (dup2(heredocfd, STDIN_FILENO) == -1)
+	{
+		perror("Error redirecting stdin");
+		close(heredocfd);
+		unlink(tmpfile);
+		exit(EXIT_FAILURE);
+	}
+	close(heredocfd);
+	unlink(tmpfile);
+}
 
-    // Redirect stdout to the file
-    if (dup2(fd, STDOUT_FILENO) == -1) {
-        perror("Error redirecting stdout");
-        close(fd);
-        exit(EXIT_FAILURE);
-    }
+void	handle_heredoc(char *delimiter)
+{
+	char	*tmpfile;
+	int		tmpfd;
 
-    // Close the original file descriptor
-    close(fd);
+	tmpfile = "/tmp/heredocXXXXXX";
+	tmpfd = create_and_write_heredoc(delimiter, tmpfile);
+	if (tmpfd == -1)
+		exit(EXIT_FAILURE);
+	setup_heredoc_fd(tmpfd, tmpfile);
+}
+
+void	handle_append_redirection(char* filename)
+{
+	int	fd;
+
+	fd = open(
+		filename,
+		O_WRONLY | O_CREAT | O_APPEND,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
+	);
+	if (fd == -1)
+	{
+		perror("Error opening file for append");
+		exit(EXIT_FAILURE);
+	}
+	if (dup2(fd, STDOUT_FILENO) == -1)
+	{
+		perror("Error redirecting stdout");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
+	close(fd);
 }
 
 void	reassign(t_list *data, int flag, int index)
