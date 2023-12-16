@@ -10,6 +10,7 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_itoa.c \
 	ft_atoi.c \
 	ft_bzero.c \
+	ft_freesplit.c \
 	ft_putstr_fd.c \
 	ft_realloc.c \
 	ft_setenv.c \
@@ -20,6 +21,7 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_strndup.c \
 	ft_memcpy.c \
 	ft_split.c \
+	ft_split_space.c \
 	ft_strcmp.c \
 	ft_strjoin.c \
 	ft_strncmp.c \

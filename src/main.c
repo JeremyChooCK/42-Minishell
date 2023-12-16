@@ -6,13 +6,14 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/15 22:58:45 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/16 12:31:10 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
 char		*g_prompt;
 
+// TODO signals needs to be fixed
 void	ft_sigint_handler(int sig)
 {
 	(void)sig;
@@ -379,87 +380,6 @@ int	process_quotes(char *cmd_line)
 	return ((in_single_quote || in_double_quote) * -1);
 }
 
-void	freesplit(char **s)
-{
-	int	i;
-
-	i = 0;
-	while (s[i] != NULL)
-	{
-		free(s[i]);
-		s[i] = NULL;
-		i++;
-	}
-	free(s);
-	s = NULL;
-}
-
-static int	is_delimiter(char c, char quote)
-{
-	return (c == ' ' && quote == 0);
-}
-
-static int	count_words(const char *str)
-{
-	int count = 0;
-	char quote = 0;
-
-	while (*str)
-	{
-		while (*str && is_delimiter(*str, quote))
-			str++;
-		if (*str)
-			count++;
-		while (*str && (!is_delimiter(*str, quote) || quote))
-		{
-			if ((*str == '\'' || *str == '\"') && quote == 0)
-				quote = *str;
-			else if (*str == quote)
-				quote = 0;
-			str++;
-		}
-	}
-	return count;
-}
-
-static char	*extract_word(const char **str)
-{
-	const char *start;
-	char quote = 0;
-	int length = 0;
-
-	while (**str && is_delimiter(**str, quote))
-		(*str)++;
-	start = *str;
-	while (**str && (!is_delimiter(**str, quote) || quote))
-	{
-		if ((**str == '\'' || **str == '\"') && quote == 0)
-			quote = **str;
-		else if (**str == quote)
-			quote = 0;
-		(*str)++;
-		length++;
-	}
-	return strndup(start, length);
-}
-
-char	**ft_split_custom(const char *s)
-{
-	if (!s)
-		return NULL;
-	int words = count_words(s);
-	char **result = (char **)malloc(sizeof(char *) * (words + 1));
-	if (!result)
-		return NULL;
-
-	const char *str = s;
-	for (int i = 0; i < words; i++)
-		result[i] = extract_word(&str);
-	result[words] = NULL;
-
-	return result;
-}
-
 int	process_and_split_command(t_list *data, char ***cmd_parts)
 {
 	if (process_quotes(data->prompt) < 0)
@@ -467,7 +387,7 @@ int	process_and_split_command(t_list *data, char ***cmd_parts)
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
 		return (-1);
 	}
-	*cmd_parts = ft_split_custom(data->prompt);
+	*cmd_parts = ft_split_space(data->prompt);
 	if (!*cmd_parts)
 	{
 		ft_putstr_fd("Error splitting command input.\n", 2);
@@ -587,7 +507,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 		if (data->i == numofpipes)
 			type = 2;
 		executecommands(data, envp, type);
-		freesplit(data->execcmds);
+		ft_freesplit(data->execcmds);
 		data->execcmds = NULL;
 		data->i++;
 	}
@@ -656,20 +576,20 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-void	handle_heredoc(char* delimiter)
+void	handle_heredoc(char *delimiter)
 {
-    // Create a temporary file to store the heredoc content
-    char	tmpfile[] = "/tmp/heredocXXXXXX";
-    int		tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
+	// Create a temporary file to store the heredoc content
+	char	tmpfile[] = "/tmp/heredocXXXXXX";
+	int		tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
 	char	*input;
 	int		heredocfd;
 
-    if (tmpfd == -1)
+	if (tmpfd == -1)
 	{
-        perror("Error creating temporary file");
-        exit(EXIT_FAILURE);
-    }
-    // Prompt the user for input until the delimiter is entered
+		perror("Error creating temporary file");
+		exit(EXIT_FAILURE);
+	}
+	// Prompt the user for input until the delimiter is entered
 	while (1)
 	{
         input = readline("> ");
@@ -683,7 +603,8 @@ void	handle_heredoc(char* delimiter)
 		if (ft_strcmp(input, delimiter) == 0)
 			break ;
         // Write the input to the temporary file
-        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1)) {
+        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1))
+		{
             perror("Error writing to temporary file");
             close(tmpfd);  // Close the temporary file before exiting
             unlink(tmpfile);  // Remove the temporary file
@@ -828,7 +749,7 @@ void	reassign(t_list *data, int flag, int index)
 			j++;
 		}
 		result[j] = NULL;
-		freesplit(data->execcmds);
+		ft_freesplit(data->execcmds);
 		data->execcmds = result;
 		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
 		{
@@ -1550,11 +1471,11 @@ void	ft_display_prompt(t_list *data, char **envp)
 						ft_putstr_fd(" command not found\n", 2);
 						ft_setenv("?", "127", 1);
 					}
-					freesplit(data->commandsarr);
+					ft_freesplit(data->commandsarr);
 					data->commandsarr = NULL;
 					if (data->execcmds)
 					{
-						freesplit(data->execcmds);
+						ft_freesplit(data->execcmds);
 						data->execcmds = NULL;
 					}
 				}
