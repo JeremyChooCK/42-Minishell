@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 12:31:10 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/16 15:02:26 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -576,56 +576,52 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-void	handle_heredoc(char *delimiter)
+char	*create_heredoc_file(char *delimiter)
 {
-	// Create a temporary file to store the heredoc content
-	char	tmpfile[] = "/tmp/heredocXXXXXX";
-	int		tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
+	char	*tmpfile;
 	char	*input;
-	int		heredocfd;
+	int		tmpfd;
 
+	tmpfile = "/tmp/heredocXXXXXX";
+	tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
 	if (tmpfd == -1)
 	{
 		perror("Error creating temporary file");
 		exit(EXIT_FAILURE);
 	}
-	// Prompt the user for input until the delimiter is entered
 	while (1)
 	{
-        input = readline("> ");
-        if (!input)
+		input = readline("> ");
+		if (!input)
 		{
-            // Handle the case where the user presses Ctrl-D (EOF)
-            printf("\n");
-            break ;
-        }
-        // Check if the delimiter is entered
+			printf("\n");
+			break ;
+		}
 		if (ft_strcmp(input, delimiter) == 0)
 			break ;
-        // Write the input to the temporary file
-        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1))
+		if ((write(tmpfd, input, ft_strlen(input)) == -1
+				|| write(tmpfd, "\n", 1) == -1))
 		{
-            perror("Error writing to temporary file");
-            close(tmpfd);  // Close the temporary file before exiting
-            unlink(tmpfile);  // Remove the temporary file
-            exit(EXIT_FAILURE);
-        }
-		// TODO: add input to history
+			perror("Error writing to temporary file");
+			close(tmpfd);
+			unlink(tmpfile);
+			exit(EXIT_FAILURE);
+		}
 		free(input);
-    }
-    // Close the temporary file
-    if (close(tmpfd) == -1)
-	{
-        perror("Error closing temporary file");
-        unlink(tmpfile);  // Remove the temporary file
-        exit(EXIT_FAILURE);
-    }
-	// Redirect stdin to the temporary file
+	}
+	close(tmpfd);
+	return (ft_strdup(tmpfile));
+}
+
+void	setup_heredoc_fd(char *tmpfile)
+{
+	int	heredocfd;
+
 	heredocfd = open(tmpfile, O_RDONLY);
 	if (heredocfd == -1)
 	{
 		perror("Error opening temporary file for heredoc");
-		unlink(tmpfile);  // Remove the temporary file
+		unlink(tmpfile);
 		exit(EXIT_FAILURE);
 	}
 	if (dup2(heredocfd, STDIN_FILENO) == -1)
@@ -636,6 +632,16 @@ void	handle_heredoc(char *delimiter)
 		exit(EXIT_FAILURE);
 	}
 	close(heredocfd);
+	unlink(tmpfile);
+}
+
+void	handle_heredoc(char *delimiter)
+{
+	char	*tmpfile;
+
+	tmpfile = create_heredoc_file(delimiter);
+	setup_heredoc_fd(tmpfile);
+	free(tmpfile);
 }
 
 void	reassign(t_list *data, int flag, int index)
