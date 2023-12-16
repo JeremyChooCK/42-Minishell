@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 19:11:37 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/16 22:15:11 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1654,34 +1654,49 @@ void	ft_display_prompt(t_list *data, char **envp)
 	}
 }
 
-void	ft_init_t_env(char **envp, t_env_list **env_list)
+void	init_env_list(t_env_list **env_list)
 {
-	int			i;
-	t_env_list	*current;
-	t_env_list	*new_node;
+	if (env_list != NULL)
+		*env_list = NULL;
+}
 
-    if (!envp || !env_list)
-        return;
-    *env_list = NULL;
-	current = NULL;
+void	add_env_node(char *env_var, t_env_list **env_list)
+{
+	t_env_list	*new_node;
+	t_env_list	*current;
+
+	new_node = create_env_node(env_var);
+	if (new_node == NULL)
+		return ;
+	if (*env_list == NULL)
+		*env_list = new_node;
+	else
+	{
+		current = *env_list;
+		while (current->next != NULL)
+			current = current->next;
+		current->next = new_node;
+	}
+}
+
+void	populate_env_list(char **envp, t_env_list **env_list)
+{
+	int	i;
+
+	if (envp == NULL || env_list == NULL)
+		return ;
 	i = 0;
 	while (envp[i] != NULL)
-    {
-		new_node = create_env_node(envp[i]);
-        if (!new_node)
-            continue ;
-        if (current == NULL)
-        {
-            *env_list = new_node;
-            current = *env_list;
-        }
-        else
-        {
-            current->next = new_node;
-            current = current->next;
-        }
+	{
+		add_env_node(envp[i], env_list);
 		i++;
-    }
+	}
+}
+
+void	ft_init_t_env(char **envp, t_env_list **env_list)
+{
+	init_env_list(env_list);
+	populate_env_list(envp, env_list);
 }
 
 void	ft_free_env_vars(t_env_list *env_vars)
@@ -1690,14 +1705,14 @@ void	ft_free_env_vars(t_env_list *env_vars)
 	t_env_list	*next;
 
 	current = env_vars;
-    while (current != NULL)
-    {
-        next = current->next;
-        free(current->env_var.key);
-        free(current->env_var.value);
-        free(current);
-        current = next;
-    }
+	while (current != NULL)
+	{
+		next = current->next;
+		free(current->env_var.key);
+		free(current->env_var.value);
+		free(current);
+		current = next;
+	}
 }
 
 int	main(int argc, char **argv, char **envp)
@@ -1709,10 +1724,10 @@ int	main(int argc, char **argv, char **envp)
 		return (0);
 	ft_setenv("?", "0", 1);
 	data = malloc(sizeof(t_list));
+	if (!data)
+		return (1);
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
-	if (!data)
-		return(printf("Memory allocation failed\n"), 1);
 	ft_init_t_env(envp, &(data->env_vars));
 	ft_display_prompt(data, envp);
 	if (data != NULL)
