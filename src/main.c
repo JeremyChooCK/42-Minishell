@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 03:45:57 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 04:33:01 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1519,7 +1519,6 @@ char *reassign_prompt(char *prompt)
             in_single_quote = !in_single_quote;
         if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
             in_double_quote = !in_double_quote;
-
         if (!in_single_quote && !in_double_quote)
         {
             if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<')
@@ -1609,92 +1608,84 @@ void	parse_for_comments(char **input)
 		*hash_pos = '\0';
 }
 
-// TODO: Refactor shell build in functions into separate functions
+void	handle_command(t_list *data, char **envp)
+{
+	parse_for_comments(&(data->prompt));
+	if (checkempty(data->prompt) == 0)
+	{
+		ft_add_to_history(data, data->prompt);
+		add_history(data->prompt);
+		if (getcmd(data, envp) == 0)
+		{
+			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+				ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+				ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+				ft_setenv("?", ft_itoa(ft_pwd()), 1);
+			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+				ft_export(data->commandsarr[1], &(data->env_vars));
+			else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+				ft_unset(data->commandsarr + 1, &(data->env_vars));
+			else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+				ft_env(data->env_vars);
+			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+			{
+				free(data->path);
+				if (data->prompt != NULL)
+				{
+					free(data->prompt);
+					data->prompt = NULL;
+				}
+				ft_exit(data->commandsarr);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+				ft_display_history(data);
+			else
+			{
+				data->path = ft_getpath(data);
+				if (data->path)
+				{
+					executecommands(data, envp, 0);
+					wait(NULL);
+				}
+				else
+				{
+					ft_putstr_fd(" command not found\n", 2);
+					ft_setenv("?", "127", 1);
+				}
+				ft_freesplit(data->commandsarr);
+				data->commandsarr = NULL;
+				if (data->execcmds)
+				{
+					ft_freesplit(data->execcmds);
+					data->execcmds = NULL;
+				}
+			}
+		}
+	}
+	else
+		ft_setenv("?", "0", 1);
+	free(data->path);
+	if (data->prompt != NULL)
+	{
+		free(data->prompt);
+		data->prompt = NULL;
+	}
+}
+
 void	ft_display_prompt(t_list *data, char **envp)
 {
-    char	hostname[NAME_SIZE];
-    char	cwd[4096];
-    char	*username;
-
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
-	username = getenv("USER");
-	if (!username)
-		username = "user";
 	while (1)
 	{
-		if (gethostname(hostname, sizeof(hostname)) != 0)
-			ft_strncpy(hostname, "unknown", sizeof(hostname));
-        hostname[8] = '\0';
-        if (getcwd(cwd, sizeof(cwd)) == NULL)
-            ft_strncpy(cwd, "unknown", sizeof(cwd));
-        data->prompt = readline("minishell$> ");
+		data->prompt = readline("minishell$> ");
 		signal(SIGINT, signal_cmd);
 		signal(SIGQUIT, SIG_IGN);
 		if (!data->prompt)
 			return ;
-		parse_for_comments(&(data->prompt));
-		if (checkempty(data->prompt) == 0)
-		{
-			ft_add_to_history(data, data->prompt);
-			add_history(data->prompt);
-			if (getcmd(data, envp) == 0)
-			{
-				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-					ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
-				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-					ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
-				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-					ft_setenv("?", ft_itoa(ft_pwd()), 1);
-				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-					ft_export(data->commandsarr[1], &(data->env_vars));
-				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-					ft_unset(data->commandsarr + 1, &(data->env_vars));
-				else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-					ft_env(data->env_vars);
-				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-				{
-					free(data->path);
-					if (data->prompt != NULL)
-					{
-						free(data->prompt);
-						data->prompt = NULL;
-					}
-					ft_exit(data->commandsarr);
-				}
-				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-					ft_display_history(data);
-				else
-				{
-					data->path = ft_getpath(data);
-					if (data->path)
-					{
-						executecommands(data, envp, 0);
-						wait(NULL);
-					}
-					else
-					{
-						ft_putstr_fd(" command not found\n", 2);
-						ft_setenv("?", "127", 1);
-					}
-					ft_freesplit(data->commandsarr);
-					data->commandsarr = NULL;
-					if (data->execcmds)
-					{
-						ft_freesplit(data->execcmds);
-						data->execcmds = NULL;
-					}
-				}
-			}
-		}
-		else
-			ft_setenv("?", "0", 1);
-		free(data->path);
-		if (data->prompt != NULL)
-		{
-			free(data->prompt);
-			data->prompt = NULL;
-		}
+		handle_command(data, envp);
 	}
 }
 
