@@ -6,21 +6,16 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 22:15:11 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/16 23:25:23 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
-
-char		*g_prompt;
 
 // TODO signals needs to be fixed
 void	ft_sigint_handler(int sig)
 {
 	(void)sig;
-	if (g_prompt != NULL)
-		printf("\n%s", g_prompt);
-	else
-		printf("\nminishell> ");
+	printf("\nminishell$> ");
 }
 
 void	ft_sigquit_handler(int sig)
@@ -590,6 +585,7 @@ int	open_temp_file(const char *tmpfile)
 	return (tmpfd);
 }
 
+// heredoc function
 char	*read_and_process_input(const char *delimiter)
 {
 	char	*input;
@@ -1567,24 +1563,7 @@ void	ft_display_prompt(t_list *data, char **envp)
         hostname[8] = '\0';
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             ft_strncpy(cwd, "unknown", sizeof(cwd));
-		g_prompt = malloc(ft_strlen(username) + ft_strlen(hostname) + ft_strlen(cwd) + 10);
-        if (!g_prompt)
-		{
-            perror("malloc");
-            exit(1);
-		}
-        ft_strcpy(g_prompt, username);
-        ft_strcat(g_prompt, "@");
-        ft_strcat(g_prompt, hostname);
-        ft_strcat(g_prompt, ":");
-        ft_strcat(g_prompt, cwd);
-        ft_strcat(g_prompt, "$ ");
-        data->prompt = readline(g_prompt);
-        if (g_prompt != NULL)
-		{
-			free(g_prompt);
-			g_prompt = NULL;
-		}
+        data->prompt = readline("minishell$> ");
 		if (!data->prompt)
 			return ;
 		parse_for_comments(&(data->prompt));
