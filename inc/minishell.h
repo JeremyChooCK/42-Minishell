@@ -82,5 +82,13 @@ void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
 void	inputredirection(t_list *data);
 char	*reassign_prompt(char *prompt);
+int	ft_echo(char **args);
+int	checkdir(char **args);
+int	ft_pwd(void);
+void	ft_export(char *arg, t_env_list **env_list);
+void	ft_unset(char **args, t_env_list **env_list);
+void	ft_env(t_env_list *env_vars);
+void	ft_exit(char **args);
+void	ft_export(char *arg, t_env_list **env_list);
 
 #endif

@@ -914,24 +914,72 @@ void	executecommands(t_list *data, char **envp, int type)
     }
     data->execcmds[i] = NULL;
     remove_quotes_from_args(data->execcmds);
+	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+	{
+		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+		//TODO : update &status
+		return ;
+	}
     id = fork();
     if (id == 0)
     {
-        if (type == 1)
+			if (type == 1)
+			{
+				dup2(data->pipefd[1], 1);
+				// printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
+			}
+			if (type == 2)
+			{
+				dup2(data->stdout, 1);
+				// printf("write to pipe2 stdout : %i\n", data->stdout);
+			}
+			close(data->pipefd[0]);
+			close(data->pipefd[1]);
+			// check for input redirection
+			inputredirection(data);
+		if (data->commandsarr[0])
 		{
-            dup2(data->pipefd[1], 1);
-			// printf("write to pipe1 stdout : %i\n", data->pipefd[1]);
+			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+			{
+				ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+				exit(1);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+			{
+				ft_setenv("?", ft_itoa(ft_pwd()), 1);
+				exit(1);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+			{
+				ft_export(data->commandsarr[1], &(data->env_vars));
+				exit(1);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+			{
+				ft_unset(data->commandsarr + 1, &(data->env_vars));
+				exit(1);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+			{
+				ft_env(data->env_vars);
+				exit(1);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+			{
+				free(data->path);
+				if (data->prompt != NULL)
+				{
+					free(data->prompt);
+					data->prompt = NULL;
+				}
+				ft_exit(data->commandsarr);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+			{
+				ft_display_history(data);
+				exit(1);
+			}
 		}
-        if (type == 2)
-		{
-            dup2(data->stdout, 1);
-			// printf("write to pipe2 stdout : %i\n", data->stdout);
-		}
-		// todo : add in check for > redirect here
-        close(data->pipefd[0]);
-        close(data->pipefd[1]);
-		// check for input redirection
-		inputredirection(data);
 		if (data->execcmds[0] != NULL) // only execute not buildin function
 		{
 			execve(data->execcmds[0], data->execcmds, envp);
