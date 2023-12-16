@@ -576,66 +576,84 @@ void	remove_quotes_from_args(char **args)
 	}
 }
 
-void	handle_heredoc(char *delimiter)
-{
-	// Create a temporary file to store the heredoc content
-	char	tmpfile[] = "/tmp/heredocXXXXXX";
-	int		tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
+void handle_heredoc(char* delimiter) {
+    // Create a temporary file to store the heredoc content
+    char tmpfile[] = "/tmp/heredocXXXXXX";
+    int tmpfd;
 	char	*input;
-	int		heredocfd;
+	int	heredocfd;
 
-	if (tmpfd == -1)
-	{
-		perror("Error creating temporary file");
-		exit(EXIT_FAILURE);
-	}
-	// Prompt the user for input until the delimiter is entered
-	while (1)
-	{
+	tmpfd = open(tmpfile, O_RDWR | O_CREAT, 0644);
+    if (tmpfd == -1) {
+        perror("Error creating temporary file");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
         input = readline("> ");
-        if (!input)
-		{
+        if (!input) {
             // Handle the case where the user presses Ctrl-D (EOF)
             printf("\n");
-            break ;
+            break;
         }
+
         // Check if the delimiter is entered
-		if (ft_strcmp(input, delimiter) == 0)
-			break ;
+        if (ft_strcmp(input, delimiter) == 0) {
+            break;
+        }
         // Write the input to the temporary file
-        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1))
-		{
+        if ((write(tmpfd, input, strlen(input)) == -1 || write(tmpfd, "\n", 1) == -1)) {
             perror("Error writing to temporary file");
             close(tmpfd);  // Close the temporary file before exiting
             unlink(tmpfile);  // Remove the temporary file
             exit(EXIT_FAILURE);
         }
-		// TODO: add input to history
+		//   TODO :add input to history
 		free(input);
     }
+
     // Close the temporary file
-    if (close(tmpfd) == -1)
-	{
+    if (close(tmpfd) == -1) {
         perror("Error closing temporary file");
         unlink(tmpfile);  // Remove the temporary file
         exit(EXIT_FAILURE);
     }
-	// Redirect stdin to the temporary file
-	heredocfd = open(tmpfile, O_RDONLY);
-	if (heredocfd == -1)
-	{
-		perror("Error opening temporary file for heredoc");
-		unlink(tmpfile);  // Remove the temporary file
-		exit(EXIT_FAILURE);
-	}
-	if (dup2(heredocfd, STDIN_FILENO) == -1)
-	{
-		perror("Error redirecting stdin");
-		close(heredocfd);
+
+        // Redirect stdin to the temporary file
+        heredocfd = open(tmpfile, O_RDONLY);
+        if (heredocfd == -1) {
+            perror("Error opening temporary file for heredoc");
+            unlink(tmpfile);  // Remove the temporary file
+            exit(EXIT_FAILURE);
+        }
+        if (dup2(heredocfd, STDIN_FILENO) == -1) {
+            perror("Error redirecting stdin");
+            close(heredocfd);
+            unlink(tmpfile);
+            exit(EXIT_FAILURE);
+        }
+        close(heredocfd);
 		unlink(tmpfile);
-		exit(EXIT_FAILURE);
-	}
-	close(heredocfd);
+}
+
+void handle_append_redirection(char* filename) {
+    // Open the file for append
+    int fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+    if (fd == -1) {
+        perror("Error opening file for append");
+        exit(EXIT_FAILURE);
+    }
+
+    // Redirect stdout to the file
+    if (dup2(fd, STDOUT_FILENO) == -1) {
+        perror("Error redirecting stdout");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+
+    // Close the original file descriptor
+    close(fd);
 }
 
 void	reassign(t_list *data, int flag, int index)
@@ -754,6 +772,36 @@ void	reassign(t_list *data, int flag, int index)
 		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
 		{
 			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], ">") == 0)
+				free(data->commandsarr[0]);
+			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
+		}
+		temp = ft_getpath(data);
+		s = data->execcmds[0];
+		if (!(access(temp, X_OK))) // if cant access then get path
+		{
+			data->execcmds[0] = ft_getpath(data);
+			free(temp);
+			free(s);
+		}
+	}
+	else if (flag == 3) // ">>" "delimiter"
+	{
+		if (data->execcmds[index + 1] == NULL)
+			return ;
+		handle_append_redirection(data->execcmds[index + 1]);
+		free(data->execcmds[index]);
+		free(data->execcmds[index + 1]);
+		i = 2;
+		while (data->execcmds[index + i])
+		{
+			data->execcmds[index] = data->execcmds[index + i];
+			// free(data->execcmds[index + i]);
+			index++;
+		}
+		data->execcmds[index] = NULL;
+		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], "<<") == 0)
+		{
+			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], "<<") == 0)
 				free(data->commandsarr[0]);
 			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 		}
