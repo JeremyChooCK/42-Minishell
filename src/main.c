@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 02:21:37 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 04:05:48 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1501,79 +1501,102 @@ void	ft_exit(char **args)
 	exit(exit_status);
 }
 
-char	*reassign_prompt(char *prompt)
+char *reassign_prompt(char *prompt)
 {
-	int	i;
-	int	j;
-	int	len;
-	char	*s;
+    int i, j, len;
+    char *s;
+    int in_single_quote = 0; // Flag for single quotes
+    int in_double_quote = 0; // Flag for double quotes
 
-	if (prompt == NULL)
-		return NULL;
-	len = ft_strlen(prompt);
-	i = 0;
-	while (prompt[i])
-	{
-		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
-			len += 2;
-		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-			len += 2;
-		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if << is present
-			len += 2;
-		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-			len += 2;
-		i++;
-	}
-	s = malloc(sizeof(char) * (len + 1));
-	i = 0;
-	j = 0;
-	while (prompt[i])
-	{
-		s[i + j] = prompt[i];
-		if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = ' ';
-			j--;
-			i++;
-		}
-		else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '<';
-			j++;
-			s[i + j] = ' ';
-		}
-		if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = ' ';
-			j--;
-			i++;
-		}
-		else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-		{
-			s[i + j] = ' ';
-			j++;
-			s[i + j] = '>';
-			j++;
-			s[i + j] = ' ';
-		}
-		i++;
-	}
-	s[i + j] = '\0';
-	return (s);
+    if (prompt == NULL)
+        return NULL;
+
+    len = ft_strlen(prompt);
+    for (i = 0; prompt[i]; i++)
+    {
+        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+            in_single_quote = !in_single_quote;
+        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+            in_double_quote = !in_double_quote;
+
+        if (!in_single_quote && !in_double_quote) 
+        {
+            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<')
+                len += 2;
+            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+                len += 2;
+            if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>')
+                len += 2;
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+                len += 2;
+        }
+    }
+
+    s = malloc(sizeof(char) * (len + 1));
+    if (!s) return NULL;
+
+    in_single_quote = 0;
+    in_double_quote = 0;
+    for (i = 0, j = 0; prompt[i]; i++)
+    {
+        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+            in_single_quote = !in_single_quote;
+        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+            in_double_quote = !in_double_quote;
+
+        if (!in_single_quote && !in_double_quote)
+        {
+            s[i + j] = prompt[i];
+            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = ' ';
+                j--;
+                i++;
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '<';
+                j++;
+                s[i + j] = ' ';
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = ' ';
+                j--;
+                i++;
+            }
+            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
+            {
+                s[i + j] = ' ';
+                j++;
+                s[i + j] = '>';
+                j++;
+                s[i + j] = ' ';
+            }
+        }
+        else
+        {
+            // Simply copy the character
+            s[i + j] = prompt[i];
+        }
+    }
+
+    s[i + j] = '\0';
+    return s;
 }
 
 void	parse_for_comments(char **input)
@@ -1585,92 +1608,84 @@ void	parse_for_comments(char **input)
 		*hash_pos = '\0';
 }
 
-// TODO: Refactor shell build in functions into separate functions
+void	handle_command(t_list *data, char **envp)
+{
+	parse_for_comments(&(data->prompt));
+	if (checkempty(data->prompt) == 0)
+	{
+		ft_add_to_history(data, data->prompt);
+		add_history(data->prompt);
+		if (getcmd(data, envp) == 0)
+		{
+			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+				ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+			else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+				ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+				ft_setenv("?", ft_itoa(ft_pwd()), 1);
+			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+				ft_export(data->commandsarr[1], &(data->env_vars));
+			else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+				ft_unset(data->commandsarr + 1, &(data->env_vars));
+			else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+				ft_env(data->env_vars);
+			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+			{
+				free(data->path);
+				if (data->prompt != NULL)
+				{
+					free(data->prompt);
+					data->prompt = NULL;
+				}
+				ft_exit(data->commandsarr);
+			}
+			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+				ft_display_history(data);
+			else
+			{
+				data->path = ft_getpath(data);
+				if (data->path)
+				{
+					executecommands(data, envp, 0);
+					wait(NULL);
+				}
+				else
+				{
+					ft_putstr_fd(" command not found\n", 2);
+					ft_setenv("?", "127", 1);
+				}
+				ft_freesplit(data->commandsarr);
+				data->commandsarr = NULL;
+				if (data->execcmds)
+				{
+					ft_freesplit(data->execcmds);
+					data->execcmds = NULL;
+				}
+			}
+		}
+	}
+	else
+		ft_setenv("?", "0", 1);
+	free(data->path);
+	if (data->prompt != NULL)
+	{
+		free(data->prompt);
+		data->prompt = NULL;
+	}
+}
+
 void	ft_display_prompt(t_list *data, char **envp)
 {
-    char	hostname[NAME_SIZE];
-    char	cwd[4096];
-    char	*username;
-
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
-	username = getenv("USER");
-	if (!username)
-		username = "user";
 	while (1)
 	{
-		if (gethostname(hostname, sizeof(hostname)) != 0)
-			ft_strncpy(hostname, "unknown", sizeof(hostname));
-        hostname[8] = '\0';
-        if (getcwd(cwd, sizeof(cwd)) == NULL)
-            ft_strncpy(cwd, "unknown", sizeof(cwd));
-        data->prompt = readline("minishell$> ");
+		data->prompt = readline("minishell$> ");
 		signal(SIGINT, signal_cmd);
 		signal(SIGQUIT, SIG_IGN);
 		if (!data->prompt)
 			return ;
-		parse_for_comments(&(data->prompt));
-		if (checkempty(data->prompt) == 0)
-		{
-			ft_add_to_history(data, data->prompt);
-			add_history(data->prompt);
-			if (getcmd(data, envp) == 0)
-			{
-				if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-					ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
-				else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-					ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
-				else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-					ft_setenv("?", ft_itoa(ft_pwd()), 1);
-				else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-					ft_export(data->commandsarr[1], &(data->env_vars));
-				else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-					ft_unset(data->commandsarr + 1, &(data->env_vars));
-				else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-					ft_env(data->env_vars);
-				else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-				{
-					free(data->path);
-					if (data->prompt != NULL)
-					{
-						free(data->prompt);
-						data->prompt = NULL;
-					}
-					ft_exit(data->commandsarr);
-				}
-				else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-					ft_display_history(data);
-				else
-				{
-					data->path = ft_getpath(data);
-					if (data->path)
-					{
-						executecommands(data, envp, 0);
-						wait(NULL);
-					}
-					else
-					{
-						ft_putstr_fd(" command not found\n", 2);
-						ft_setenv("?", "127", 1);
-					}
-					ft_freesplit(data->commandsarr);
-					data->commandsarr = NULL;
-					if (data->execcmds)
-					{
-						ft_freesplit(data->execcmds);
-						data->execcmds = NULL;
-					}
-				}
-			}
-		}
-		else
-			ft_setenv("?", "0", 1);
-		free(data->path);
-		if (data->prompt != NULL)
-		{
-			free(data->prompt);
-			data->prompt = NULL;
-		}
+		handle_command(data, envp);
 	}
 }
 
