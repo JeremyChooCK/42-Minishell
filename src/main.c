@@ -939,6 +939,21 @@ int	is_absolute_path(char *cmd)
 	return (cmd && (cmd[0] == '/' || (cmd[0] == '.' && cmd[1] == '/')));
 }
 
+
+int	check_for_redirection(char	**s)
+{
+	int	i;
+
+	i = 0;
+	while (s[i])
+	{
+		if (!ft_strcmp(s[i], "'<'") || !ft_strcmp(s[i], "'<<'") || !ft_strcmp(s[i], "'>'") || !ft_strcmp(s[i], "'>>'"))
+			return (1);
+		i++;
+	}
+	return (0);
+}
+
 void	executecommands(t_list *data, char **envp, int type)
 {
 	int			id;
@@ -970,7 +985,8 @@ void	executecommands(t_list *data, char **envp, int type)
 		i++;
 	}
 	data->execcmds[i] = NULL;
-	remove_quotes_from_args(data->execcmds);
+	if (!check_for_redirection(data->execcmds))
+		remove_quotes_from_args(data->execcmds);
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
 		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
@@ -1040,6 +1056,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		}
 		if (data->execcmds[0] != NULL) // only execute not buildin function
 		{
+			remove_quotes_from_args(data->execcmds);
 			execve(data->execcmds[0], data->execcmds, envp);
 			if (stat(data->execcmds[0], &buff) == 0)
 			{
