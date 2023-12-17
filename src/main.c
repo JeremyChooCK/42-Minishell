@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 06:21:14 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 07:59:39 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -347,7 +347,10 @@ char	*expand_env_variables(char *arg, int expand)
 		return (NULL);
 	if (expand)
 	{
-		result = expand_env_vars(arg);
+		if (ft_strcmp(arg, "$?") == 0)
+			result = ft_strdup(getenv("?"));
+		else
+			result = expand_env_vars(arg);
 		free(arg);
 		return (result);
 	}
@@ -388,7 +391,6 @@ int	process_and_split_command(t_list *data, char ***cmd_parts)
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
 		return (-1);
 	}
-	// *cmd_parts = ft_split(data->prompt, " ");
 	*cmd_parts = ft_split_space(data->prompt);
 	if (!*cmd_parts)
 	{
@@ -504,7 +506,6 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 	strarr = ft_split(temp, '|');
 	while (data->i < numofpipes + 1)
 	{
-		// data->commandsarr = ft_split(strarr[data->i], ' ');
 		data->commandsarr = ft_split_space(strarr[data->i]);
 		data->path = ft_getpath(data);
 		if (data->i == numofpipes)
@@ -523,7 +524,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 int	execute_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
-	char	*exit_status;
+	//char	*exit_status;
 	int		result;
 
 	result = 0;
@@ -532,14 +533,15 @@ int	execute_commands(t_list *data, char **envp, int numofpipes)
 	else
 	{
 		temp = reassign_prompt(data->prompt);
-		// data->commandsarr = ft_split(temp, ' ');
 		data->commandsarr = ft_split_space(temp);
 		if (data->commandsarr == NULL)
 			return (0);
 	}
+	/*
 	exit_status = getenv("?");
 	if (exit_status != NULL)
 		replace_exit_status(data->commandsarr, exit_status);
+	*/
 	return (result);
 }
 
@@ -741,9 +743,8 @@ void	reassign(t_list *data, int flag, int index)
 		data->inputfd = open(s, O_RDONLY);
 		if (data->inputfd == -1)
 		{
-			// Handle the error
 			perror("Error opening file");
-			// You may choose to exit the program or handle the error differently
+			ft_setenv("?", "1", 1);
 			exit(EXIT_FAILURE);
 		}
 		free(s);
@@ -1037,7 +1038,7 @@ void	executecommands(t_list *data, char **envp, int type)
 				ft_putstr_fd("minishell: ", 2);
 				ft_putstr_fd(data->execcmds[0], 2);
 				ft_putstr_fd(": Permission denied\n", 2);
-				exit(126);
+				exit(127);
 			}
 		}
 		ft_setenv("?", ft_itoa(EXIT_FAILURE), 1);
@@ -1509,7 +1510,6 @@ char *reassign_prompt(char *prompt)
 
     if (prompt == NULL)
         return NULL;
-
     len = ft_strlen(prompt);
     for (i = 0; prompt[i]; i++)
     {
@@ -1529,10 +1529,8 @@ char *reassign_prompt(char *prompt)
                 len += 2;
         }
     }
-
     s = malloc(sizeof(char) * (len + 1));
     if (!s) return NULL;
-
     in_single_quote = 0;
     in_double_quote = 0;
     for (i = 0, j = 0; prompt[i]; i++)
@@ -1586,15 +1584,11 @@ char *reassign_prompt(char *prompt)
                 s[i + j] = ' ';
             }
         }
-        else
-        {
-            // Simply copy the character
-            s[i + j] = prompt[i];
-        }
-    }
-
-    s[i + j] = '\0';
-    return s;
+		else
+			s[i + j] = prompt[i];
+	}
+	s[i + j] = '\0';
+	return (s);
 }
 
 void	parse_for_comments(char **input)
