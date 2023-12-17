@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 08:18:07 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/17 09:24:56 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -934,6 +934,11 @@ void	outputredirection(t_list *data)
 	}
 }
 
+int	is_absolute_path(char *cmd)
+{
+	return (cmd && (cmd[0] == '/' || (cmd[0] == '.' && cmd[1] == '/')));
+}
+
 void	executecommands(t_list *data, char **envp, int type)
 {
 	int			id;
@@ -947,7 +952,10 @@ void	executecommands(t_list *data, char **envp, int type)
 	data->execcmds = malloc(sizeof(char *) * (i + 1));
 	if (!data->execcmds)
 		exit(EXIT_FAILURE);
-	data->execcmds[0] = data->path;
+	if (is_absolute_path(data->commandsarr[0]))
+		data->execcmds[0] = ft_strdup(data->commandsarr[0]);
+	else
+		data->execcmds[0] = data->path;
 	if (data->execcmds[0] == NULL)
 	{
 		ft_putstr_fd(data->commandsarr[0], 2);
@@ -958,11 +966,11 @@ void	executecommands(t_list *data, char **envp, int type)
 	i = 1;
 	while (data->commandsarr[i])
 	{
-        data->execcmds[i] = ft_strdup(data->commandsarr[i]);
-        i++;
-    }
-    data->execcmds[i] = NULL;
-    remove_quotes_from_args(data->execcmds);
+		data->execcmds[i] = ft_strdup(data->commandsarr[i]);
+		i++;
+	}
+	data->execcmds[i] = NULL;
+	remove_quotes_from_args(data->execcmds);
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
 		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
@@ -1603,7 +1611,7 @@ void	parse_for_comments(char **input)
 void	handle_external_commands(t_list *data, char **envp)
 {
 	data->path = ft_getpath(data);
-	if (data->path)
+	if (data->path || is_absolute_path(data->commandsarr[0]))
 	{
 		executecommands(data, envp, 0);
 		wait(NULL);
