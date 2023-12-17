@@ -947,7 +947,8 @@ int	check_for_redirection(char	**s)
 	i = 0;
 	while (s[i])
 	{
-		if (!ft_strcmp(s[i], "'<'") || !ft_strcmp(s[i], "'<<'") || !ft_strcmp(s[i], "'>'") || !ft_strcmp(s[i], "'>>'"))
+		if (!ft_strcmp(s[i], "'<'") || !ft_strcmp(s[i], "'<<'") || !ft_strcmp(s[i], "'>'") || !ft_strcmp(s[i], "'>>'")
+    || !ft_strcmp(s[i], "\"<\"") || !ft_strcmp(s[i], "\"<<\"") || !ft_strcmp(s[i], "\">\"") || !ft_strcmp(s[i], "\">>\""))
 			return (1);
 		i++;
 	}
