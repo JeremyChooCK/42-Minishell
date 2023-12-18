@@ -1,25 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_freesplit.c                                     :+:      :+:    :+:   */
+/*   ft_memset.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/12/18 15:42:10 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 15:13:02 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-void	ft_freesplit(char **s)
+void	*ft_memset(void *b, int c, size_t len)
 {
-	int	i;
+	unsigned char	*p;
 
-	if (s)
-	{
-		i = 0;
-		while (s[i] != NULL)
-			free(s[i++]);
-		free(s);
-	}
+	p = b;
+	while (len-- > 0)
+		*p++ = (unsigned char)c;
+	return (b);
 }
