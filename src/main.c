@@ -978,9 +978,9 @@ void	executecommands(t_list *data, char **envp, int type)
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
 		{
-			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+			if (ft_strcmp(data->execcmds[0], "echo") == 0)
 			{
-				ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+				ft_setenv("?", ft_itoa(ft_echo(data->execcmds + 1)), 1);
 				exit(1);
 			}
 			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
