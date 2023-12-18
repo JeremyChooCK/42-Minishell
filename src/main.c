@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 12:36:18 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 14:24:50 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -16,11 +16,9 @@ int	g_exit_code;
 void	signal_cmd(int sig)
 {
 	g_exit_code += sig;
-	ft_setenv("?", ft_itoa(sig), 1);
 	if (sig == 2)
 	{
 		g_exit_code = 130;
-		ft_setenv("?", "130", 1);
 		printf("\n");
 		rl_on_new_line();
 		rl_replace_line("", 0);
@@ -36,11 +34,9 @@ void	signal_cmd(int sig)
 void	signal_cmd_2(int sig)
 {
 	g_exit_code += sig;
-	ft_setenv("?", ft_itoa(sig), 1);
 	if (sig == 2)
 	{
 		g_exit_code = 130;
-		ft_setenv("?", "130", 1);
 		printf("\n");
 		rl_replace_line("", 0);
 		rl_redisplay();
@@ -318,7 +314,7 @@ char	*expand_env_variables(char *arg, int expand)
 	if (expand)
 	{
 		if (ft_strcmp(arg, "$?") == 0)
-			result = ft_strdup(getenv("?"));
+			result = ft_itoa(g_exit_code);
 		else
 			result = expand_env_vars(arg);
 		free(arg);
@@ -708,7 +704,7 @@ void	reassign(t_list *data, int flag, int index)
 		if (data->inputfd == -1)
 		{
 			perror("Error opening file");
-			ft_setenv("?", "1", 1);
+			g_exit_code = 1;
 			exit(EXIT_FAILURE);
 		}
 		free(s);
@@ -954,7 +950,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		remove_quotes_from_args(data->execcmds);
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
-		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+		g_exit_code = checkdir(data->commandsarr + 1);
 		return ;
 	}
 	if (pipe(data->pipefd) == -1)
@@ -980,12 +976,12 @@ void	executecommands(t_list *data, char **envp, int type)
 		{
 			if (ft_strcmp(data->execcmds[0], "echo") == 0)
 			{
-				ft_setenv("?", ft_itoa(ft_echo(data->execcmds + 1)), 1);
+				g_exit_code = ft_echo(data->commandsarr + 1);
 				exit(1);
 			}
 			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 			{
-				ft_setenv("?", ft_itoa(ft_pwd()), 1);
+				g_exit_code = ft_pwd();
 				exit(1);
 			}
 			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
@@ -1031,7 +1027,7 @@ void	executecommands(t_list *data, char **envp, int type)
 				exit(127);
 			}
 		}
-		ft_setenv("?", ft_itoa(EXIT_FAILURE), 1);
+		g_exit_code = EXIT_FAILURE;
         exit(EXIT_FAILURE);
     }
     else
@@ -1042,14 +1038,13 @@ void	executecommands(t_list *data, char **envp, int type)
         if (type == 1)
         {
 			dup2(data->pipefd[0], 0);
-			// printf("pipe stdin : %i\n", data->pipefd[0]);
 			close(data->pipefd[0]);
 		}
 		else
 		{
 			wait(&status);
 			if (WIFEXITED(status))
-				ft_setenv("?", ft_itoa(WEXITSTATUS(status)), 1);
+				g_exit_code = WEXITSTATUS(status);
 		}
 		wait(NULL);
 		signal(SIGINT, signal_cmd);
@@ -1315,7 +1310,7 @@ void	ft_export(char *arg, t_env_list **env_list)
 
 	if (!arg || !env_list)
 	{
-		ft_setenv("?", "1", 1);
+		g_exit_code = 1;
 		return ;
 	}
 	separator = ft_strchr(arg, '=');
@@ -1335,10 +1330,10 @@ void	ft_export(char *arg, t_env_list **env_list)
 		ft_putstr_fd(" not a valid identifier\n", 2);
 		free(key);
 		free(value);
-		ft_setenv("?", "1", 1);
+		g_exit_code = 1;
 		return ;
 	}
-	ft_setenv("?", "0", 1);
+	g_exit_code = 0;
     for (current = *env_list; current != NULL; current = current->next)
     {
         if (ft_strcmp(current->env_var.key, key) == 0)
@@ -1402,7 +1397,7 @@ void	ft_unset(char **args, t_env_list **env_list)
 	    }
 		i++;
 	}
-	ft_setenv("?", "0", 1);
+	g_exit_code = 0;
 }
 
 void	ft_env(t_env_list *env_vars)
@@ -1453,7 +1448,6 @@ void	strip_quotes(char *str)
 
 void	ft_exit(char **args)
 {
-	char	*last_exit_status;
 	int		exit_status;
 	char	*arg;
 
@@ -1483,62 +1477,83 @@ void	ft_exit(char **args)
 		free(arg);
 	}
 	else
-	{
-		last_exit_status = getenv("?");
-		if (last_exit_status)
-			exit_status = ft_atoi(last_exit_status);
-	}
+		exit_status = g_exit_code;
 	exit(exit_status);
 }
 
-int calculate_new_length(const char *prompt) {
-    int len = 0, in_single_quote = 0, in_double_quote = 0;
+int	calculate_new_length(const char *prompt)
+{
+	int	i;
+	int len;
+	int	in_single_quote;
+	int	in_double_quote;
 
-    for (int i = 0; prompt[i]; i++) {
-        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
-            in_single_quote = !in_single_quote;
-        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
-            in_double_quote = !in_double_quote;
-
-        if (!in_single_quote && !in_double_quote) {
-            if (prompt[i] == '<' || prompt[i] == '>') {
-                len += (prompt[i + 1] == prompt[i]) ? 4 : 2;
-            }
-        }
-        len++;
-    }
-    return len;
+	len = 0;
+	in_single_quote = 0;
+	in_double_quote = 0;
+	i = 0;
+	while (prompt[i])
+	{
+		if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+			in_single_quote = !in_single_quote;
+		if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+			in_double_quote = !in_double_quote;
+		if (!in_single_quote && !in_double_quote)
+		{
+			if (prompt[i] == '<' || prompt[i] == '>')
+			{
+				if (prompt[i + 1] == prompt[i])
+					len += 4;
+				else
+					len += 2;
+			}
+		}
+		len++;
+		i++;
+	}
+	return (len);
 }
 
-char *reassign_prompt(const char *prompt) {
-    if (prompt == NULL)
-        return NULL;
+char	*reassign_prompt(const char *prompt)
+{
+	int		i;
+	int		j;
+	int		new_len;
+	int		in_single_quote;
+	int		in_double_quote;
+	char	*s;
 
-    int new_len = calculate_new_length(prompt);
-    char *s = malloc(new_len + 1);
-    if (!s) return NULL;
-
-    int in_single_quote = 0, in_double_quote = 0, j = 0;
-    for (int i = 0; prompt[i]; i++) {
-        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
-            in_single_quote = !in_single_quote;
-        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
-            in_double_quote = !in_double_quote;
-
-        if (!in_single_quote && !in_double_quote && (prompt[i] == '<' || prompt[i] == '>')) {
-            s[j++] = ' ';
-            s[j++] = prompt[i];
-            if (prompt[i + 1] == prompt[i]) {
-                s[j++] = prompt[i];
-                i++;
-            }
-            s[j++] = ' ';
-        } else {
-            s[j++] = prompt[i];
-        }
-    }
-    s[j] = '\0';
-    return s;
+	if (prompt == NULL)
+		return (NULL);
+	new_len = calculate_new_length(prompt);
+	s = malloc(new_len + 1);
+	if (!s)
+		return (NULL);
+	in_single_quote = 0;
+	in_double_quote = 0;
+	i = 0;
+	j = 0;
+	while (prompt[i])
+	{
+		if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+			in_single_quote = !in_single_quote;
+		if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+			in_double_quote = !in_double_quote;
+		if (!in_single_quote && !in_double_quote
+			&& (prompt[i] == '<' || prompt[i] == '>'))
+		{
+			s[j++] = ' ';
+			s[j++] = prompt[i];
+			if (prompt[i + 1] == prompt[i])
+				s[j++] = prompt[i++];
+			s[j++] = ' ';
+		}
+		else
+			s[j++] = prompt[i];
+		i++;
+	}
+	s[j] = '\0';
+	return (s);
 }
 
 void	parse_for_comments(char **input)
@@ -1561,7 +1576,7 @@ void	handle_external_commands(t_list *data, char **envp)
 	else
 	{
 		ft_putstr_fd(" command not found\n", 2);
-		ft_setenv("?", "127", 1);
+		g_exit_code = 127;
 	}
 	ft_freesplit(data->commandsarr);
 	data->commandsarr = NULL;
@@ -1575,11 +1590,11 @@ void	handle_external_commands(t_list *data, char **envp)
 void	execute_specific_command(t_list *data, char **envp)
 {
 	if (ft_strcmp(data->commandsarr[0], "echo") == 0)
-		ft_setenv("?", ft_itoa(ft_echo(data->commandsarr + 1)), 1);
+		g_exit_code = ft_echo(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-		ft_setenv("?", ft_itoa(checkdir(data->commandsarr + 1)), 1);
+		g_exit_code = checkdir(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-		ft_setenv("?", ft_itoa(ft_pwd()), 1);
+		g_exit_code = ft_pwd();
 	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 		ft_export(data->commandsarr[1], &(data->env_vars));
 	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
@@ -1632,7 +1647,7 @@ void	handle_command(t_list *data, char **envp)
 			execute_command(data, envp);
 	}
 	else
-		ft_setenv("?", "0", 1);
+		g_exit_code = 0;
 	cleanup_command(data);
 }
 
@@ -1702,14 +1717,13 @@ void	ft_free_env_vars(t_env_list *env_vars)
 	}
 }
 
-// TODO remove all instances of setenv getenv, use custom env instead
 int	main(int argc, char **argv, char **envp)
 {
 	t_list	*data;
 
 	if (!argc && !argv)
 		return (0);
-	ft_setenv("?", "0", 1);
+	g_exit_code = 0;
 	data = malloc(sizeof(t_list));
 	if (!data)
 		return (1);
