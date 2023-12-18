@@ -6,16 +6,20 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 09:42:05 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 12:36:18 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
+int	g_exit_code;
+
 void	signal_cmd(int sig)
 {
+	g_exit_code += sig;
 	ft_setenv("?", ft_itoa(sig), 1);
 	if (sig == 2)
 	{
+		g_exit_code = 130;
 		ft_setenv("?", "130", 1);
 		printf("\n");
 		rl_on_new_line();
@@ -31,24 +35,16 @@ void	signal_cmd(int sig)
 
 void	signal_cmd_2(int sig)
 {
+	g_exit_code += sig;
 	ft_setenv("?", ft_itoa(sig), 1);
 	if (sig == 2)
 	{
+		g_exit_code = 130;
 		ft_setenv("?", "130", 1);
 		printf("\n");
 		rl_replace_line("", 0);
 		rl_redisplay();
 	}
-}
-
-char	**split_and_validate_path(char *path)
-{
-	char	**splitpath;
-
-	if (path == NULL)
-		path = "/usr/local/bin:/usr/bin:/bin";
-	splitpath = ft_split(path, ':');
-	return (splitpath);
 }
 
 char	*join_paths_and_check_access(char **splitpath, t_list *data)
@@ -104,10 +100,8 @@ char	*ft_getpath(t_list *data)
 {
 	char	**splitpath;
 	char	*joinedpath;
-	char	*path;
 
-	path = getenv("PATH");
-	splitpath = split_and_validate_path(path);
+	splitpath = ft_split(getenv("PATH"), ':');
 	if (!splitpath)
 		return (NULL);
 	joinedpath = join_paths_and_check_access(splitpath, data);
@@ -180,13 +174,6 @@ char	*perform_replacement(
 	return (result);
 }
 
-int	toggle_quote_state(int quote_state, char current_char)
-{
-	if (current_char == '\'')
-		return (!quote_state);
-	return (quote_state);
-}
-
 char	*process_env_var(char **p, char *result, char *temp)
 {
 	char	var_name[NAME_SIZE];
@@ -216,21 +203,6 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-char	*get_env_var(char *name)
-{
-	char	*value;
-
-	value = getenv(name);
-	if (value)
-		return (ft_strdup(value));
-	return (ft_strdup(""));
-}
-
-int	is_var_char(char c)
-{
-	return (ft_isalnum(c) || c == '_');
-}
-
 size_t	get_var_value_size(const char *var_name)
 {
 	char	*var_value;
@@ -241,7 +213,7 @@ size_t	get_var_value_size(const char *var_name)
 	return (ft_strlen(var_value));
 }
 
-size_t	calculate_expansion_size_helper(char *str)
+size_t	calculate_expansion_size(char *s)
 {
 	char	*start;
 	char	*var_name;
@@ -249,14 +221,14 @@ size_t	calculate_expansion_size_helper(char *str)
 	size_t	var_len;
 
 	total_size = 0;
-	while (*str)
+	while (*s)
 	{
-		if (*str == '$' && is_var_char(*(str + 1)))
+		if (*s == '$' && (ft_isalnum(*(s + 1)) || *(s + 1) == '_'))
 		{
-			start = ++str;
-			while (is_var_char(*str))
-				str++;
-			var_len = str - start;
+			start = ++s;
+			while (ft_isalnum(*s) || *s == '_')
+				s++;
+			var_len = s - start;
 			var_name = ft_strndup(start, var_len);
 			total_size += get_var_value_size(var_name);
 			free(var_name);
@@ -264,32 +236,27 @@ size_t	calculate_expansion_size_helper(char *str)
 		else
 		{
 			total_size++;
-			str++;
+			s++;
 		}
 	}
-	return (total_size);
+	return (total_size + 1);
 }
 
-size_t	calculate_expansion_size(char *str)
-{
-	return (calculate_expansion_size_helper(str) + 1);
-}
-
-char	*find_next_variable(char *str, size_t *var_len)
+char	*find_next_variable(char *s, size_t *var_len)
 {
 	char	*start;
 
-	while (*str)
+	while (*s)
 	{
-		if (*str == '$' && is_var_char(*(str + 1)))
+		if (*s == '$' && (ft_isalnum(*(s + 1)) || *(s + 1) == '_'))
 		{
-			start = ++str;
-			while (is_var_char(*str))
-				str++;
-			*var_len = str - start;
+			start = ++s;
+			while (ft_isalnum(*s) || *s == '_')
+				s++;
+			*var_len = s - start;
 			return (start);
 		}
-		str++;
+		s++;
 	}
 	return (NULL);
 }
@@ -300,7 +267,10 @@ void	handle_variable(char **src, char **dest, char *start, size_t var_len)
 	char	*var_value;
 
 	var_name = ft_strndup(start, var_len);
-	var_value = get_env_var(var_name);
+	if (getenv(var_name))
+		var_value = ft_strdup(getenv(var_name));
+	else
+		var_value = ft_strdup("");
 	ft_strcpy(*dest, var_value);
 	*dest += ft_strlen(var_value);
 	free(var_name);
@@ -524,7 +494,6 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 int	execute_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
-	//char	*exit_status;
 	int		result;
 
 	result = 0;
@@ -537,11 +506,6 @@ int	execute_commands(t_list *data, char **envp, int numofpipes)
 		if (data->commandsarr == NULL)
 			return (0);
 	}
-	/*
-	exit_status = getenv("?");
-	if (exit_status != NULL)
-		replace_exit_status(data->commandsarr, exit_status);
-	*/
 	return (result);
 }
 
@@ -1687,12 +1651,6 @@ void	ft_display_prompt(t_list *data, char **envp)
 	}
 }
 
-void	init_env_list(t_env_list **env_list)
-{
-	if (env_list != NULL)
-		*env_list = NULL;
-}
-
 void	add_env_node(char *env_var, t_env_list **env_list)
 {
 	t_env_list	*new_node;
@@ -1712,24 +1670,20 @@ void	add_env_node(char *env_var, t_env_list **env_list)
 	}
 }
 
-void	populate_env_list(char **envp, t_env_list **env_list)
+void	ft_init_t_env(char **envp, t_env_list **env_list)
 {
 	int	i;
 
-	if (envp == NULL || env_list == NULL)
-		return ;
-	i = 0;
-	while (envp[i] != NULL)
-	{
-		add_env_node(envp[i], env_list);
-		i++;
-	}
-}
-
-void	ft_init_t_env(char **envp, t_env_list **env_list)
-{
-	init_env_list(env_list);
-	populate_env_list(envp, env_list);
+	if (env_list != NULL)
+		*env_list = NULL;
+    if (envp == NULL || env_list == NULL)
+        return ;
+    i = 0;
+    while (envp[i] != NULL)
+    {
+        add_env_node(envp[i], env_list);
+        i++;
+    }
 }
 
 void	ft_free_env_vars(t_env_list *env_vars)
