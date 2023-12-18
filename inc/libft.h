@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 14:21:44 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 15:11:54 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef LIBFT_H
@@ -16,12 +16,14 @@
 
 int		ft_atoi(const char *str);
 void	ft_bzero(void *s, size_t n);
+void	*ft_calloc(size_t count, size_t size);
 void	ft_freesplit(char **s);
 int		ft_isalnum(int c);
 int		ft_isdigit(int c);
 char	*ft_itoa(int n);
 void	*ft_memcpy(void *dest, const void *src, size_t n);
 void	*ft_memmove(void *dest, const void *src, size_t n);
+void	*ft_memset(void *b, int c, size_t len);
 int		ft_min(int a, int b);
 void	ft_putstr_fd(char *s, int fd);
 void	*ft_realloc(void *ptr, size_t size);

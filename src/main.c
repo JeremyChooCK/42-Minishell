@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 14:24:50 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 19:47:18 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -73,23 +73,8 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
 		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
 		return (ft_strdup(data->commandsarr[0]));
-	while (splitpath[j])
-		free(splitpath[j++]);
-	free(splitpath);
+	ft_freesplit(splitpath);
 	return (NULL);
-}
-
-void	free_splitpath(char **splitpath)
-{
-	int	i;
-
-	i = 0;
-	if (splitpath != NULL)
-	{
-		while (splitpath[i])
-			free(splitpath[i++]);
-		free(splitpath);
-	}
 }
 
 char	*ft_getpath(t_list *data)
@@ -103,7 +88,7 @@ char	*ft_getpath(t_list *data)
 	joinedpath = join_paths_and_check_access(splitpath, data);
 	if (joinedpath)
 	{
-		free_splitpath(splitpath);
+		ft_freesplit(splitpath);
 		return (joinedpath);
 	}
 	return (handle_special_cases_and_cleanup(splitpath, data));
@@ -470,6 +455,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 	type = 1;
 	temp = reassign_prompt(data->prompt);
 	strarr = ft_split(temp, '|');
+	free(temp);
 	while (data->i < numofpipes + 1)
 	{
 		data->commandsarr = ft_split_space(strarr[data->i]);
@@ -499,6 +485,7 @@ int	execute_commands(t_list *data, char **envp, int numofpipes)
 	{
 		temp = reassign_prompt(data->prompt);
 		data->commandsarr = ft_split_space(temp);
+		free(temp);
 		if (data->commandsarr == NULL)
 			return (0);
 	}
@@ -1773,19 +1760,52 @@ void	ft_init_t_env(char **envp, t_env_list **env_list)
     }
 }
 
-void	ft_free_env_vars(t_env_list *env_vars)
+void	free_env_var(t_env_var *env_var)
 {
-	t_env_list	*current;
-	t_env_list	*next;
-
-	current = env_vars;
-	while (current != NULL)
+	if (env_var)
 	{
-		next = current->next;
-		free(current->env_var.key);
-		free(current->env_var.value);
-		free(current);
-		current = next;
+		free(env_var->key);
+		free(env_var->value);
+	}
+}
+
+void	free_env_list(t_env_list *env_list)
+{
+	t_env_list	*tmp;
+
+	while (env_list)
+	{
+		tmp = env_list;
+		env_list = env_list->next;
+		free_env_var(&(tmp->env_var));
+		free(tmp);
+	}
+}
+
+void	free_history(t_history *history)
+{
+	t_history	*tmp;
+
+	while (history)
+	{
+		tmp = history;
+		history = history->next;
+		free(tmp->command);
+		free(tmp);
+	}
+}
+
+void	ft_free_list(t_list *list)
+{
+	if (list)
+	{
+		free(list->prompt);
+		free(list->path);
+		ft_freesplit(list->commandsarr);
+		ft_freesplit(list->execcmds);
+		free_history(list->history);
+		free_env_list(list->env_vars);
+		free(list);
 	}
 }
 
@@ -1796,7 +1816,7 @@ int	main(int argc, char **argv, char **envp)
 	if (!argc && !argv)
 		return (0);
 	g_exit_code = 0;
-	data = malloc(sizeof(t_list));
+	data = ft_calloc(1, sizeof(t_list));
 	if (!data)
 		return (1);
 	data->stdin = dup(STDIN_FILENO);
@@ -1805,10 +1825,7 @@ int	main(int argc, char **argv, char **envp)
 	signal(SIGINT, signal_cmd);
 	signal(SIGQUIT, SIG_IGN);
 	ft_display_prompt(data, envp);
-	if (data != NULL)
-	{
-		ft_free_env_vars(data->env_vars);
-		free(data);
-	}
+	if (data)
+		ft_free_list(data);
 	return (0);
 }
