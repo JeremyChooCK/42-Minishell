@@ -556,7 +556,6 @@ int	open_temp_file(const char *tmpfile)
 	return (tmpfd);
 }
 
-// heredoc function
 char	*read_and_process_input(const char *delimiter, t_list *data)
 {
 	char	*input;
@@ -679,177 +678,250 @@ void	handle_append_redirection(char *filename)
 	close(fd);
 }
 
-void	reassign(t_list *data, int flag, int index)
+char	*copy_infile_name(t_list *data, int index, int i)
+{
+	char	*s;
+	int		j;
+
+	j = 0;
+	s = malloc(sizeof(char) * i + 1);
+	while (j < i)
+	{
+		s[j] = data->execcmds[index + 1][j];
+		j++;
+	}
+	s[j] = '\0';
+	return (s);
+}
+
+void	open_infile_and_redirect_input(t_list *data, int index)
+{
+	int		i;
+	char	*s;
+
+	i = 0;
+	while (data->execcmds[index + 1][i] && data->execcmds[index + 1][i] != '>')
+		i++;
+	s = copy_infile_name(data, index, i);
+	data->inputfd = open(s, O_RDONLY);
+	if (data->inputfd == -1)
+	{
+		perror("Error opening file");
+		g_exit_code = 1;
+		exit(EXIT_FAILURE);
+	}
+	free(s);
+	dup2(data->inputfd, 0);
+	close(data->inputfd);
+	free(data->execcmds[index]);
+	free(data->execcmds[index + 1]);
+}
+
+void	move_commands_forward(t_list *data, int index)
+{
+	int	j;
+
+	j = index;
+	index++;
+	while (data->execcmds[index + 1])
+	{
+		data->execcmds[index] = data->execcmds[index + 1];
+		index++;
+	}
+	data->execcmds[index] = NULL;
+	index = j;
+	while (data->execcmds[j + 1])
+	{
+		data->execcmds[j] = data->execcmds[j + 1];
+		j++;
+	}
+	data->execcmds[j] = NULL;
+}
+
+void	handle_input_redirection(t_list *data, int index)
+{
+	char	*temp;
+
+	open_infile_and_redirect_input(data, index);
+	move_commands_forward(data, index);
+	free(data->commandsarr[0]);
+	data->commandsarr[0] = NULL;
+	data->commandsarr[0] = ft_strdup(data->execcmds[0]);
+	temp = data->execcmds[0];
+	if (!(access(ft_getpath(data), X_OK)))
+	{
+		data->execcmds[0] = ft_getpath(data);
+		free(temp);
+	}
+	free(data->commandsarr[0]);
+	data->commandsarr[0] = NULL;
+}
+
+void	move_forward_and_check_for_null(t_list *data, int index)
+{
+	int	i;
+
+	i = 2;
+	while (data->execcmds[index + i])
+	{
+		data->execcmds[index] = data->execcmds[index + i];
+		index++;
+	}
+	data->execcmds[index] = NULL;
+	if (data->commandsarr[0] == NULL
+		|| ft_strcmp(data->commandsarr[0], "<<") == 0)
+	{
+		if (data->commandsarr[0] != NULL
+			&& ft_strcmp(data->commandsarr[0], "<<") == 0)
+			free(data->commandsarr[0]);
+		data->commandsarr[0] = ft_strdup(data->execcmds[0]);
+	}
+}
+
+void	reassign_and_handle_heredoc(t_list *data, int index)
+{
+	char	*temp;
+	char	*s;
+
+	if (data->execcmds[index + 1] == NULL)
+		return ;
+	handle_heredoc(data->execcmds[index + 1], data);
+	free(data->execcmds[index]);
+	free(data->execcmds[index + 1]);
+	move_forward_and_check_for_null(data, index);
+	temp = ft_getpath(data);
+	s = data->execcmds[0];
+	if (!(access(temp, X_OK)))
+	{
+		data->execcmds[0] = ft_getpath(data);
+		free(temp);
+		free(s);
+	}
+}
+
+void	open_output_file(t_list *data, int index)
+{
+	data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
+	if (data->inputfd == -1)
+	{
+		perror("Error opening file");
+		exit(EXIT_FAILURE);
+	}
+	dup2(data->inputfd, 1);
+	close(data->inputfd);
+	if (data->inputfd == -1)
+	{
+		perror("Error opening file");
+		exit(EXIT_FAILURE);
+	}
+}
+
+char	**remove_arrow_and_outfile_strings(t_list *data)
 {
 	int		i;
 	int		j;
-	char 	*s;
-	char	*temp;
 	char	**result;
 
 	i = 0;
 	j = 0;
-	if (flag == 0) // "<" is present
+	while (data->execcmds[i])
+		i++;
+	result = malloc(sizeof(char *) * (i + 1 - 2));
+	i = 0;
+	while (data->execcmds[i])
 	{
-		while (data->execcmds[index + 1][i] && data->execcmds[index + 1][i] != '>')
-			i++;
-		s = malloc(sizeof(char) * i + 1);
-		while (j < i)
-		{
-			s[j] = data->execcmds[index + 1][j];
-			j++;
-		}
-		s[j] = '\0';
-		data->inputfd = open(s, O_RDONLY);
-		if (data->inputfd == -1)
-		{
-			perror("Error opening file");
-			g_exit_code = 1;
-			exit(EXIT_FAILURE);
-		}
-		free(s);
-		dup2(data->inputfd, 0);
-		close(data->inputfd);
-		free(data->execcmds[index]);
-		free(data->execcmds[index + 1]);
-		j = index;
-		index++;
-		while (data->execcmds[index + 1])
-		{
-			data->execcmds[index] = data->execcmds[index + 1];
-			index++;
-		}
-		data->execcmds[index] = NULL;
-		index = j;
-		while (data->execcmds[j + 1])
-		{
-			data->execcmds[j] = data->execcmds[j + 1];
-			j++;
-		}
-		data->execcmds[j] = NULL;
-		free(data->commandsarr[0]);
-		data->commandsarr[0] = NULL;
+		if (ft_strcmp(data->execcmds[i], ">") == 0)
+			i += 2;
+		if (data->execcmds[i] == NULL)
+			break ;
+		result[j] = ft_strdup(data->execcmds[i]);
+		i++;
+		j++;
+	}
+	result[j] = NULL;
+	return (result);
+}
+
+void	handle_output_redirection(t_list *data, int index)
+{
+	char	*temp;
+	char	*s;
+	char	**result;
+
+	open_output_file(data, index);
+	result = remove_arrow_and_outfile_strings(data);
+	ft_freesplit(data->execcmds);
+	data->execcmds = result;
+	if (data->commandsarr[0] == NULL
+		|| ft_strcmp(data->commandsarr[0], ">") == 0)
+	{
+		if (data->commandsarr[0] != NULL
+			&& ft_strcmp(data->commandsarr[0], ">") == 0)
+			free(data->commandsarr[0]);
 		data->commandsarr[0] = ft_strdup(data->execcmds[0]);
-		temp = data->execcmds[0];
-		if (!(access(ft_getpath(data), X_OK))) // if cant access then get path
-		{
-			data->execcmds[0] = ft_getpath(data);
-			free(temp);
-		}
-		free(data->commandsarr[0]);
-		data->commandsarr[0] = NULL;
 	}
-	else if (flag == 1) // "<<" "delimiter"
+	temp = ft_getpath(data);
+	s = data->execcmds[0];
+	if (!(access(temp, X_OK)))
 	{
-		if (data->execcmds[index + 1] == NULL)
-			return ;
-		handle_heredoc(data->execcmds[index + 1], data);
-		free(data->execcmds[index]);
-		free(data->execcmds[index + 1]);
-		i = 2;
-		while (data->execcmds[index + i])
-		{
-			data->execcmds[index] = data->execcmds[index + i];
-			// free(data->execcmds[index + i]);
-			index++;
-		}
-		data->execcmds[index] = NULL;
-		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], "<<") == 0)
-		{
-			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], "<<") == 0)
-				free(data->commandsarr[0]);
-			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
-		}
-		temp = ft_getpath(data);
-		s = data->execcmds[0];
-		if (!(access(temp, X_OK))) // if cant access then get path
-		{
-			data->execcmds[0] = ft_getpath(data);
-			free(temp);
-			free(s);
-		}
+		data->execcmds[0] = ft_getpath(data);
+		free(temp);
+		free(s);
 	}
-	else if (flag == 2) // ">" "infile"
+}
+
+void	move_forward_and_check_for_append(t_list *data, int index)
+{
+	int	i;
+
+	i = 2;
+	while (data->execcmds[index + i])
 	{
-		data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
-		if (data->inputfd == -1)
-		{
-			// Handle the error
-			perror("Error opening file");
-			// You may choose to exit the program or handle the error differently
-			exit(EXIT_FAILURE);
-		}
-		dup2(data->inputfd, 1);
-		close(data->inputfd);
-		if (data->inputfd == -1)
-		{
-			// Handle the error
-			perror("Error opening file");
-			// You may choose to exit the program or handle the error differently
-			exit(EXIT_FAILURE);
-		}
-		while (data->execcmds[i])
-			i++;
-		result = malloc(sizeof(char *) * (i + 1 - 2)); // minus the > and outfile
-		i = 0;
-		while (data->execcmds[i])
-		{
-			if (ft_strcmp(data->execcmds[i], ">") == 0)
-				i += 2;
-			if (data->execcmds[i] == NULL)
-				break ;
-			result[j] = ft_strdup(data->execcmds[i]);
-			i++;
-			j++;
-		}
-		result[j] = NULL;
-		ft_freesplit(data->execcmds);
-		data->execcmds = result;
-		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], ">") == 0)
-		{
-			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], ">") == 0)
-				free(data->commandsarr[0]);
-			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
-		}
-		temp = ft_getpath(data);
-		s = data->execcmds[0];
-		if (!(access(temp, X_OK))) // if cant access then get path
-		{
-			data->execcmds[0] = ft_getpath(data);
-			free(temp);
-			free(s);
-		}
+		data->execcmds[index] = data->execcmds[index + i];
+		index++;
 	}
-	else if (flag == 3) // ">>" "delimiter"
+	data->execcmds[index] = NULL;
+	if (data->commandsarr[0] == NULL
+		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
 	{
-		if (data->execcmds[index + 1] == NULL)
-			return ;
-		handle_append_redirection(data->execcmds[index + 1]);
-		free(data->execcmds[index]);
-		free(data->execcmds[index + 1]);
-		i = 2;
-		while (data->execcmds[index + i])
-		{
-			data->execcmds[index] = data->execcmds[index + i];
-			// free(data->execcmds[index + i]);
-			index++;
-		}
-		data->execcmds[index] = NULL;
-		if (data->commandsarr[0] == NULL || ft_strcmp(data->commandsarr[0], "<<") == 0)
-		{
-			if (data->commandsarr[0] != NULL && ft_strcmp(data->commandsarr[0], "<<") == 0)
-				free(data->commandsarr[0]);
-			data->commandsarr[0] = ft_strdup(data->execcmds[0]);
-		}
-		temp = ft_getpath(data);
-		s = data->execcmds[0];
-		if (!(access(temp, X_OK))) // if cant access then get path
-		{
-			data->execcmds[0] = ft_getpath(data);
-			free(temp);
-			free(s);
-		}
+		if (data->commandsarr[0] != NULL
+			&& ft_strcmp(data->commandsarr[0], ">>") == 0)
+			free(data->commandsarr[0]);
+		data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 	}
+}
+
+void	reassign_and_handle_append(t_list *data, int index)
+{
+	char	*s;
+	char	*temp;
+
+	if (data->execcmds[index + 1] == NULL)
+		return ;
+	handle_append_redirection(data->execcmds[index + 1]);
+	free(data->execcmds[index]);
+	free(data->execcmds[index + 1]);
+	move_forward_and_check_for_append(data, index);
+	temp = ft_getpath(data);
+	s = data->execcmds[0];
+	if (!(access(temp, X_OK)))
+	{
+		data->execcmds[0] = ft_getpath(data);
+		free(temp);
+		free(s);
+	}
+}
+
+void	reassign(t_list *data, int flag, int index)
+{
+	if (flag == 0)
+		handle_input_redirection(data, index);
+	else if (flag == 1)
+		reassign_and_handle_heredoc(data, index);
+	else if (flag == 2)
+		handle_output_redirection(data, index);
+	else if (flag == 3)
+		reassign_and_handle_append(data, index);
 }
 
 void	inputredirection(t_list *data)
@@ -859,12 +931,12 @@ void	inputredirection(t_list *data)
 	i = 0;
 	while (data->execcmds[i])
 	{
-		if (ft_strcmp(data->execcmds[i], "<") == 0) // check for "<" "infile"
+		if (ft_strcmp(data->execcmds[i], "<") == 0)
 		{
 			reassign(data, 0, i);
 			i = -1;
 		}
-		else if (ft_strcmp(data->execcmds[i], "<<") == 0) // check for "<<" "infile"
+		else if (ft_strcmp(data->execcmds[i], "<<") == 0)
 		{
 			reassign(data, 1, i);
 			i = -1;
