@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 06:22:12 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 09:42:59 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -31,6 +31,7 @@
 # define NAME_SIZE 256
 # define MAX_INPUT_LENGTH 1024
 
+// TODO remove this and store env in struct instead
 extern char	**environ;
 
 typedef struct s_env_var
@@ -82,7 +83,7 @@ void	ft_display_history(t_list *data);
 void	ft_display_prompt(t_list *data, char **envp);
 int		getcmd(t_list *data, char **envp);
 void	inputredirection(t_list *data);
-char	*reassign_prompt(char *prompt);
+char	*reassign_prompt(const char *prompt);
 int		ft_echo(char **args);
 int		checkdir(char **args);
 int		ft_pwd(void);

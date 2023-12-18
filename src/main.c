@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/17 16:31:52 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 09:42:05 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1527,94 +1527,54 @@ void	ft_exit(char **args)
 	exit(exit_status);
 }
 
-char *reassign_prompt(char *prompt)
-{
-    int i, j, len;
-    char *s;
-    int in_single_quote = 0; // Flag for single quotes
-    int in_double_quote = 0; // Flag for double quotes
+int calculate_new_length(const char *prompt) {
+    int len = 0, in_single_quote = 0, in_double_quote = 0;
 
+    for (int i = 0; prompt[i]; i++) {
+        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+            in_single_quote = !in_single_quote;
+        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+            in_double_quote = !in_double_quote;
+
+        if (!in_single_quote && !in_double_quote) {
+            if (prompt[i] == '<' || prompt[i] == '>') {
+                len += (prompt[i + 1] == prompt[i]) ? 4 : 2;
+            }
+        }
+        len++;
+    }
+    return len;
+}
+
+char *reassign_prompt(const char *prompt) {
     if (prompt == NULL)
         return NULL;
-    len = ft_strlen(prompt);
-    for (i = 0; prompt[i]; i++)
-    {
-        if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
-            in_single_quote = !in_single_quote;
-        if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
-            in_double_quote = !in_double_quote;
-        if (!in_single_quote && !in_double_quote)
-        {
-            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<')
-                len += 2;
-            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-                len += 2;
-            if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>')
-                len += 2;
-            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-                len += 2;
-        }
-    }
-    s = malloc(sizeof(char) * (len + 1));
+
+    int new_len = calculate_new_length(prompt);
+    char *s = malloc(new_len + 1);
     if (!s) return NULL;
-    in_single_quote = 0;
-    in_double_quote = 0;
-    for (i = 0, j = 0; prompt[i]; i++)
-    {
+
+    int in_single_quote = 0, in_double_quote = 0, j = 0;
+    for (int i = 0; prompt[i]; i++) {
         if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
             in_single_quote = !in_single_quote;
         if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
             in_double_quote = !in_double_quote;
 
-        if (!in_single_quote && !in_double_quote)
-        {
-            s[i + j] = prompt[i];
-            if (prompt[i + 1] != '\0' && prompt[i] == '<' && prompt[i + 1] == '<') // if << is present
-            {
-                s[i + j] = ' ';
-                j++;
-                s[i + j] = '<';
-                j++;
-                s[i + j] = '<';
-                j++;
-                s[i + j] = ' ';
-                j--;
+        if (!in_single_quote && !in_double_quote && (prompt[i] == '<' || prompt[i] == '>')) {
+            s[j++] = ' ';
+            s[j++] = prompt[i];
+            if (prompt[i + 1] == prompt[i]) {
+                s[j++] = prompt[i];
                 i++;
             }
-            else if (prompt[i + 1] != '\0' && prompt[i] == '<')
-            {
-                s[i + j] = ' ';
-                j++;
-                s[i + j] = '<';
-                j++;
-                s[i + j] = ' ';
-            }
-            else if (prompt[i + 1] != '\0' && prompt[i] == '>' && prompt[i + 1] == '>') // if >> is present
-            {
-                s[i + j] = ' ';
-                j++;
-                s[i + j] = '>';
-                j++;
-                s[i + j] = '>';
-                j++;
-                s[i + j] = ' ';
-                j--;
-                i++;
-            }
-            else if (prompt[i + 1] != '\0' && prompt[i] == '>')
-            {
-                s[i + j] = ' ';
-                j++;
-                s[i + j] = '>';
-                j++;
-                s[i + j] = ' ';
-            }
+            s[j++] = ' ';
+        } else {
+            s[j++] = prompt[i];
         }
-		else
-			s[i + j] = prompt[i];
-	}
-	s[i + j] = '\0';
-	return (s);
+    }
+    s[j] = '\0';
+    return s;
 }
 
 void	parse_for_comments(char **input)
