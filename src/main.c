@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 19:47:18 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 23:42:03 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -31,7 +31,7 @@ void	signal_cmd(int sig)
 	}
 }
 
-void	signal_cmd_2(int sig)
+void	signal_cmd_pipe(int sig)
 {
 	g_exit_code += sig;
 	if (sig == 2)
@@ -40,6 +40,57 @@ void	signal_cmd_2(int sig)
 		printf("\n");
 		rl_replace_line("", 0);
 		rl_redisplay();
+	}
+}
+
+void	free_env_var(t_env_var *env_var)
+{
+	if (env_var)
+	{
+		free(env_var->key);
+		free(env_var->value);
+	}
+}
+
+void	free_env_list(t_env_list *env_list)
+{
+	t_env_list	*tmp;
+
+	while (env_list)
+	{
+		tmp = env_list;
+		env_list = env_list->next;
+		free_env_var(&(tmp->env_var));
+		free(tmp);
+	}
+}
+
+void	free_history(t_history *history)
+{
+	t_history	*tmp;
+
+	while (history)
+	{
+		tmp = history;
+		history = history->next;
+		free(tmp->command);
+		free(tmp);
+	}
+}
+
+void	ft_free_list(t_list *list)
+{
+	if (list)
+	{
+		if (list->prompt)
+			free(list->prompt);
+		if (list->path)
+			free(list->path);
+		ft_freesplit(list->commandsarr);
+		ft_freesplit(list->execcmds);
+		free_history(list->history);
+		free_env_list(list->env_vars);
+		free(list);
 	}
 }
 
@@ -65,9 +116,6 @@ char	*join_paths_and_check_access(char **splitpath, t_list *data)
 
 char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 {
-	int	j;
-
-	j = 0;
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
 		|| ft_strcmp(data->commandsarr[0], "<<") == 0
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
@@ -366,6 +414,7 @@ int	expand_variables_and_count_pipes(
 		i++;
 	}
 	*numofpipes = checkforpipe(data->prompt);
+	free(expanded_cmd);
 	return (0);
 }
 
@@ -484,6 +533,7 @@ int	execute_commands(t_list *data, char **envp, int numofpipes)
 	else
 	{
 		temp = reassign_prompt(data->prompt);
+		ft_freesplit(data->commandsarr);
 		data->commandsarr = ft_split_space(temp);
 		free(temp);
 		if (data->commandsarr == NULL)
@@ -502,6 +552,7 @@ int	getcmd(t_list *data, char **envp)
 	result = process_command_parts(data, cmd_parts, &numofpipes);
 	if (result < 0)
 		return (-1);
+	ft_freesplit(cmd_parts);
 	return (execute_commands(data, envp, numofpipes));
 }
 
@@ -939,12 +990,12 @@ void	outputredirection(t_list *data)
 	i = 0;
 	while (data->execcmds[i])
 	{
-		if (ft_strcmp(data->execcmds[i], ">") == 0) // check for ">" "infile"
+		if (ft_strcmp(data->execcmds[i], ">") == 0)
 		{
 			reassign(data, 2, i);
 			i = -1;
 		}
-		else if (ft_strcmp(data->execcmds[i], ">>") == 0) // check for ">" "infile"
+		else if (ft_strcmp(data->execcmds[i], ">>") == 0)
 		{
 			reassign(data, 3, i);
 			i = -1;
@@ -1060,13 +1111,7 @@ void	executecommands(t_list *data, char **envp, int type)
 			}
 			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 			{
-				free(data->path);
-				if (data->prompt != NULL)
-				{
-					free(data->prompt);
-					data->prompt = NULL;
-				}
-				ft_exit(data->commandsarr);
+				ft_exit(data);
 			}
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 			{
@@ -1091,7 +1136,7 @@ void	executecommands(t_list *data, char **envp, int type)
     }
     else
 	{
-		signal(SIGINT, signal_cmd_2);
+		signal(SIGINT, signal_cmd_pipe);
 		signal(SIGQUIT, SIG_IGN);
         close(data->pipefd[1]);
         if (type == 1)
@@ -1505,23 +1550,26 @@ void	strip_quotes(char *str)
 	str[j] = '\0';
 }
 
-void	ft_exit(char **args)
+// ft_exit(data->commandsarr)
+void	ft_exit(t_list *data)
 {
 	int		exit_status;
 	char	*arg;
 
 	exit_status = 0;
-	if (args[1])
+	if (data->commandsarr[1])
 	{
-		if (args[2])
+		if (data->commandsarr[2])
 		{
 			ft_putstr_fd("exit: too many arguments\n", 2);
+			ft_free_list(data);
 			exit(1);
 		}
-		arg = ft_strdup(args[1]);
+		arg = ft_strdup(data->commandsarr[1]);
 		if (!arg)
 		{
 			perror("Error allocating memory");
+			ft_free_list(data);
 			exit(1);
 		}
 		strip_quotes(arg);
@@ -1531,12 +1579,14 @@ void	ft_exit(char **args)
 		{
 			ft_putstr_fd("exit: numeric argument required\n", 2);
 			free(arg);
+			ft_free_list(data);
 			exit(2);
 		}
 		free(arg);
 	}
 	else
 		exit_status = g_exit_code;
+	ft_free_list(data);
 	exit(exit_status);
 }
 
@@ -1668,13 +1718,7 @@ void	execute_specific_command(t_list *data, char **envp)
 
 void	cleanup_and_exit(t_list *data)
 {
-	free(data->path);
-	if (data->prompt != NULL)
-	{
-		free(data->prompt);
-		data->prompt = NULL;
-	}
-	ft_exit(data->commandsarr);
+	ft_exit(data);
 }
 
 void	execute_command(t_list *data, char **envp)
@@ -1689,10 +1733,7 @@ void	cleanup_command(t_list *data)
 {
 	free(data->path);
 	if (data->prompt != NULL)
-	{
 		free(data->prompt);
-		data->prompt = NULL;
-	}
 }
 
 void	handle_command(t_list *data, char **envp)
@@ -1758,55 +1799,6 @@ void	ft_init_t_env(char **envp, t_env_list **env_list)
         add_env_node(envp[i], env_list);
         i++;
     }
-}
-
-void	free_env_var(t_env_var *env_var)
-{
-	if (env_var)
-	{
-		free(env_var->key);
-		free(env_var->value);
-	}
-}
-
-void	free_env_list(t_env_list *env_list)
-{
-	t_env_list	*tmp;
-
-	while (env_list)
-	{
-		tmp = env_list;
-		env_list = env_list->next;
-		free_env_var(&(tmp->env_var));
-		free(tmp);
-	}
-}
-
-void	free_history(t_history *history)
-{
-	t_history	*tmp;
-
-	while (history)
-	{
-		tmp = history;
-		history = history->next;
-		free(tmp->command);
-		free(tmp);
-	}
-}
-
-void	ft_free_list(t_list *list)
-{
-	if (list)
-	{
-		free(list->prompt);
-		free(list->path);
-		ft_freesplit(list->commandsarr);
-		ft_freesplit(list->execcmds);
-		free_history(list->history);
-		free_env_list(list->env_vars);
-		free(list);
-	}
 }
 
 int	main(int argc, char **argv, char **envp)

@@ -6,7 +6,7 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 10:39:28 by jechoo            #+#    #+#             */
-/*   Updated: 2023/12/18 15:42:10 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 22:46:57 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -15,11 +15,11 @@ void	ft_freesplit(char **s)
 {
 	int	i;
 
-	if (s)
+	i = 0;
+	while (s && s[i])
 	{
-		i = 0;
-		while (s[i] != NULL)
-			free(s[i++]);
-		free(s);
+		free(s[i]);
+		i++;
 	}
+	free(s);
 }
