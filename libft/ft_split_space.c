@@ -6,7 +6,7 @@
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 12:25:32 by jechoo            #+#    #+#             */
-/*   Updated: 2023/12/18 18:43:20 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 23:37:37 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -80,7 +80,10 @@ char	**ft_split_space(char *s)
 	str = s;
 	i = 0;
 	while (i < words)
-		result[i++] = extract_word(&str);
+	{
+		result[i] = extract_word(&str);
+		i++;
+	}
 	result[words] = NULL;
 	return (result);
 }
