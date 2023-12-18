@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/16 17:55:10 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/18 14:21:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef LIBFT_H
@@ -25,7 +25,6 @@ void	*ft_memmove(void *dest, const void *src, size_t n);
 int		ft_min(int a, int b);
 void	ft_putstr_fd(char *s, int fd);
 void	*ft_realloc(void *ptr, size_t size);
-int		ft_setenv(const char *name, const char *value, int overwrite);
 char	**ft_split(char const *s, char c);
 char	**ft_split_space(char *s);
 char	*ft_strcat(char *dest, const char *src);
