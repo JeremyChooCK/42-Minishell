@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 14:21:09 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/18 14:24:50 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -974,7 +974,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
 		{
-			if (ft_strcmp(data->commandsarr[0], "echo") == 0)
+			if (ft_strcmp(data->execcmds[0], "echo") == 0)
 			{
 				g_exit_code = ft_echo(data->commandsarr + 1);
 				exit(1);
