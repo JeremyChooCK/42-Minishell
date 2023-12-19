@@ -915,11 +915,9 @@ void	handle_output_redirection(t_list *data, int index)
 	if (!(access(temp, X_OK)))
 	{
 		data->execcmds[0] = ft_getpath(data);
-		free(temp);
 		free(s);
 	}
-	else
-		free(temp);
+	free(temp);
 }
 
 void	move_forward_and_check_for_append(t_list *data, int index)
@@ -1040,9 +1038,20 @@ int	check_for_redirection(char	**s)
 	return (0);
 }
 
-void prepare_and_execute_commands(t_list *data)
+void	process_command(t_list *data)
 {
-	int			i;
+	if (!check_for_redirection(data->execcmds))
+		remove_quotes_from_args(data->execcmds);
+	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+	{
+		g_exit_code = checkdir(data->commandsarr + 1);
+		return ;
+	}
+}
+
+void	prepare_and_execute_commands(t_list *data)
+{
+	int	i;
 
 	i = 0;
 	while (data->commandsarr[i])
@@ -1062,33 +1071,24 @@ void prepare_and_execute_commands(t_list *data)
 		return ;
 	}
 	data->path = NULL;
-	i = 1;
-	while (data->commandsarr[i])
-	{
+	i = 0;
+	while (data->commandsarr[++i])
 		data->execcmds[i] = ft_strdup(data->commandsarr[i]);
-		i++;
-	}
 	data->execcmds[i] = NULL;
-	if (!check_for_redirection(data->execcmds))
-		remove_quotes_from_args(data->execcmds);
-	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-	{
-		g_exit_code = checkdir(data->commandsarr + 1);
-		return ;
-	}
+	process_command(data);
 }
 
-void manage_process_and_signals(t_list *data, int type, char **envp)
+void	manage_process_and_signals(t_list *data, int type, char **envp)
 {
-    int			id;
-    int			status;
+	int			id;
+	int			status;
 	struct stat	buff;
 
 	if (pipe(data->pipefd) == -1)
 		exit(EXIT_FAILURE);
 	signal(SIGINT, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
-    id = fork();
+	id = fork();
 	if (id == -1)
 		exit(1);
     if (id == 0)
