@@ -1056,33 +1056,43 @@ void	prepare_command_arrays(t_list *data)
 	data->execcmds[i] = NULL;
 }
 
-void	prepare_and_execute_commands(t_list *data)
+void	handle_parent_process(t_list *data, int type, int id)
 {
-	prepare_command_arrays(data);
-	if (!check_for_redirection(data->execcmds))
-		remove_quotes_from_args(data->execcmds);
-	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+	int status;
+
+	signal(SIGINT, signal_cmd_pipe);
+	signal(SIGQUIT, SIG_IGN);
+	close(data->pipefd[1]);
+	if (type == 1)
 	{
-		g_exit_code = checkdir(data->commandsarr + 1);
-		return ;
+		dup2(data->pipefd[0], 0);
+		close(data->pipefd[0]);
 	}
+	else
+	{
+		waitpid(id, &status, 0);
+		if (WIFEXITED(status))
+			g_exit_code = WEXITSTATUS(status);
+	}
+	wait(NULL);
+	signal(SIGINT, signal_cmd);
+	signal(SIGQUIT, SIG_IGN);
 }
 
-void manage_process_and_signals(t_list *data, int type, char **envp)
+void	manage_process_and_signals(t_list *data, int type, char **envp)
 {
-    int			id;
-    int			status;
+	int			id;
 	struct stat	buff;
 
 	if (pipe(data->pipefd) == -1)
 		exit(EXIT_FAILURE);
 	signal(SIGINT, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
-    id = fork();
+	id = fork();
 	if (id == -1)
 		exit(1);
-    if (id == 0)
-    {
+	if (id == 0)
+	{
 		signal(SIGINT, SIG_DFL);
 		signal(SIGQUIT, SIG_DFL);
 		inputredirection(data);
@@ -1141,34 +1151,23 @@ void manage_process_and_signals(t_list *data, int type, char **envp)
 			}
 		}
 		g_exit_code = EXIT_FAILURE;
-        exit(EXIT_FAILURE);
-    }
-    else
-	{
-		signal(SIGINT, signal_cmd_pipe);
-		signal(SIGQUIT, SIG_IGN);
-        close(data->pipefd[1]);
-        if (type == 1)
-		{
-			dup2(data->pipefd[0], 0);
-			close(data->pipefd[0]);
-		}
-		else
-		{
-			wait(&status);
-			if (WIFEXITED(status))
-				g_exit_code = WEXITSTATUS(status);
-		}
-		wait(NULL);
-		signal(SIGINT, signal_cmd);
-		signal(SIGQUIT, SIG_IGN);
+		exit(EXIT_FAILURE);
 	}
+	else
+		handle_parent_process(data, type, id);
 }
 
 void executecommands(t_list *data, char **envp, int type)
 {
-    prepare_and_execute_commands(data);
-    manage_process_and_signals(data, type, envp);
+	prepare_command_arrays(data);
+	if (!check_for_redirection(data->execcmds))
+		remove_quotes_from_args(data->execcmds);
+	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+	{
+		g_exit_code = checkdir(data->commandsarr + 1);
+		return ;
+	}
+	manage_process_and_signals(data, type, envp);
 }
 
 int	checkempty(char *s)
