@@ -232,16 +232,6 @@ char	*process_env_var(char **p, char *result, char *temp)
 	return (temp);
 }
 
-size_t	get_var_value_size(const char *var_name)
-{
-	char	*var_value;
-
-	var_value = getenv(var_name);
-	if (!var_value)
-		var_value = "";
-	return (ft_strlen(var_value));
-}
-
 size_t	calculate_expansion_size(char *s)
 {
 	char	*start;
@@ -259,7 +249,7 @@ size_t	calculate_expansion_size(char *s)
 				s++;
 			var_len = s - start;
 			var_name = ft_strndup(start, var_len);
-			total_size += get_var_value_size(var_name);
+			total_size += ft_strlen(getenv(var_name));
 			free(var_name);
 		}
 		else
@@ -915,11 +905,9 @@ void	handle_output_redirection(t_list *data, int index)
 	if (!(access(temp, X_OK)))
 	{
 		data->execcmds[0] = ft_getpath(data);
-		free(temp);
 		free(s);
 	}
-	else
-		free(temp);
+	free(temp);
 }
 
 void	move_forward_and_check_for_append(t_list *data, int index)
@@ -1040,9 +1028,9 @@ int	check_for_redirection(char	**s)
 	return (0);
 }
 
-void prepare_and_execute_commands(t_list *data)
+void	prepare_command_arrays(t_list *data)
 {
-	int			i;
+	int	i;
 
 	i = 0;
 	while (data->commandsarr[i])
@@ -1062,13 +1050,15 @@ void prepare_and_execute_commands(t_list *data)
 		return ;
 	}
 	data->path = NULL;
-	i = 1;
-	while (data->commandsarr[i])
-	{
+	i = 0;
+	while (data->commandsarr[++i])
 		data->execcmds[i] = ft_strdup(data->commandsarr[i]);
-		i++;
-	}
 	data->execcmds[i] = NULL;
+}
+
+void	prepare_and_execute_commands(t_list *data)
+{
+	prepare_command_arrays(data);
 	if (!check_for_redirection(data->execcmds))
 		remove_quotes_from_args(data->execcmds);
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
