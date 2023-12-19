@@ -1040,12 +1040,9 @@ int	check_for_redirection(char	**s)
 	return (0);
 }
 
-void	executecommands(t_list *data, char **envp, int type)
+void prepare_and_execute_commands(t_list *data)
 {
-	int			id;
 	int			i;
-	int			status;
-	struct stat	buff;
 
 	i = 0;
 	while (data->commandsarr[i])
@@ -1079,6 +1076,14 @@ void	executecommands(t_list *data, char **envp, int type)
 		g_exit_code = checkdir(data->commandsarr + 1);
 		return ;
 	}
+}
+
+void manage_process_and_signals(t_list *data, int type, char **envp)
+{
+    int			id;
+    int			status;
+	struct stat	buff;
+
 	if (pipe(data->pipefd) == -1)
 		exit(EXIT_FAILURE);
 	signal(SIGINT, SIG_IGN);
@@ -1126,16 +1131,14 @@ void	executecommands(t_list *data, char **envp, int type)
 				exit(1);
 			}
 			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-			{
 				ft_exit(data);
-			}
 			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 			{
 				ft_display_history(data);
 				exit(1);
 			}
 		}
-		if (data->execcmds[0] != NULL) // only execute not buildin function
+		if (data->execcmds[0] != NULL)
 		{
 			remove_quotes_from_args(data->execcmds);
 			execve(data->execcmds[0], data->execcmds, envp);
@@ -1156,7 +1159,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		signal(SIGQUIT, SIG_IGN);
         close(data->pipefd[1]);
         if (type == 1)
-        {
+		{
 			dup2(data->pipefd[0], 0);
 			close(data->pipefd[0]);
 		}
@@ -1170,6 +1173,12 @@ void	executecommands(t_list *data, char **envp, int type)
 		signal(SIGINT, signal_cmd);
 		signal(SIGQUIT, SIG_IGN);
 	}
+}
+
+void executecommands(t_list *data, char **envp, int type)
+{
+    prepare_and_execute_commands(data);
+    manage_process_and_signals(data, type, envp);
 }
 
 int	checkempty(char *s)
