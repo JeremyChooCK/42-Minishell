@@ -958,11 +958,16 @@ void	reassign_and_handle_append(t_list *data, int index)
 	move_forward_and_check_for_append(data, index);
 	temp = ft_getpath(data);
 	s = data->execcmds[0];
-	if (!(access(temp, X_OK)))
+	if (temp)
 	{
-		data->execcmds[0] = ft_getpath(data);
-		free(temp);
-		free(s);
+		if (!(access(temp, X_OK)))
+		{
+			data->execcmds[0] = ft_getpath(data);
+			free(temp);
+			free(s);
+		}
+		else
+			free(temp);
 	}
 }
 
