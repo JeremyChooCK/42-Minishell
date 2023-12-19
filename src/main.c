@@ -116,12 +116,12 @@ char	*join_paths_and_check_access(char **splitpath, t_list *data)
 
 char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 {
+	ft_freesplit(splitpath);
 	if (ft_strcmp(data->commandsarr[0], "<") == 0
 		|| ft_strcmp(data->commandsarr[0], "<<") == 0
 		|| ft_strcmp(data->commandsarr[0], ">") == 0
 		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
 		return (ft_strdup(data->commandsarr[0]));
-	ft_freesplit(splitpath);
 	return (NULL);
 }
 
