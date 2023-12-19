@@ -513,6 +513,8 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 			type = 2;
 		executecommands(data, envp, type);
 		ft_freesplit(data->execcmds);
+		if (data->i < numofpipes)
+			ft_freesplit(data->commandsarr);
 		data->execcmds = NULL;
 		data->i++;
 	}
