@@ -1058,7 +1058,7 @@ void	prepare_command_arrays(t_list *data)
 
 void	handle_parent_process(t_list *data, int type, int id)
 {
-	int status;
+	int	status;
 
 	signal(SIGINT, signal_cmd_pipe);
 	signal(SIGQUIT, SIG_IGN);
@@ -1077,6 +1077,42 @@ void	handle_parent_process(t_list *data, int type, int id)
 	wait(NULL);
 	signal(SIGINT, signal_cmd);
 	signal(SIGQUIT, SIG_IGN);
+}
+
+void	execute_builtin_commands(t_list *data)
+{
+	if (ft_strcmp(data->execcmds[0], "echo") == 0)
+	{
+		g_exit_code = ft_echo(data->commandsarr + 1);
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+	{
+		g_exit_code = ft_pwd();
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+	{
+		ft_export(data->commandsarr[1], &(data->env_vars));
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+	{
+		ft_unset(data->commandsarr + 1, &(data->env_vars));
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+	{
+		ft_env(data->env_vars);
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+		ft_exit(data);
+	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+	{
+		ft_display_history(data);
+		exit(1);
+	}
 }
 
 void	manage_process_and_signals(t_list *data, int type, char **envp)
@@ -1104,40 +1140,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 		close(data->pipefd[0]);
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
-		{
-			if (ft_strcmp(data->execcmds[0], "echo") == 0)
-			{
-				g_exit_code = ft_echo(data->commandsarr + 1);
-				exit(1);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-			{
-				g_exit_code = ft_pwd();
-				exit(1);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-			{
-				ft_export(data->commandsarr[1], &(data->env_vars));
-				exit(1);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-			{
-				ft_unset(data->commandsarr + 1, &(data->env_vars));
-				exit(1);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-			{
-				ft_env(data->env_vars);
-				exit(1);
-			}
-			else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-				ft_exit(data);
-			else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-			{
-				ft_display_history(data);
-				exit(1);
-			}
-		}
+			execute_builtin_commands(data);
 		if (data->execcmds[0] != NULL)
 		{
 			remove_quotes_from_args(data->execcmds);
