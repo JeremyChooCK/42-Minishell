@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/19 19:33:14 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/19 19:50:52 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -789,7 +789,6 @@ void	move_commands_forward(t_list *data, int index)
 void	handle_input_redirection(t_list *data, int index)
 {
 	char	*temp;
-	// char	*temp2;
 
 	open_infile_and_redirect_input(data, index);
 	move_commands_forward(data, index);
@@ -797,7 +796,6 @@ void	handle_input_redirection(t_list *data, int index)
 	data->commandsarr[0] = NULL;
 	data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 	temp = data->execcmds[0];
-	// temp2 = ft_getpath(data);
 	if (!(access(ft_getpath(data), X_OK)))
 	{
 		data->execcmds[0] = ft_getpath(data);
@@ -1025,12 +1023,6 @@ void	outputredirection(t_list *data)
 	}
 }
 
-int	is_absolute_path(char *cmd)
-{
-	return (cmd && (cmd[0] == '/' || (cmd[0] == '.' && cmd[1] == '/')));
-}
-
-
 int	check_for_redirection(char	**s)
 {
 	int	i;
@@ -1038,8 +1030,10 @@ int	check_for_redirection(char	**s)
 	i = 0;
 	while (s[i])
 	{
-		if (!ft_strcmp(s[i], "'<'") || !ft_strcmp(s[i], "'<<'") || !ft_strcmp(s[i], "'>'") || !ft_strcmp(s[i], "'>>'")
-    || !ft_strcmp(s[i], "\"<\"") || !ft_strcmp(s[i], "\"<<\"") || !ft_strcmp(s[i], "\">\"") || !ft_strcmp(s[i], "\">>\""))
+		if (!ft_strcmp(s[i], "'<'") || !ft_strcmp(s[i], "'<<'")
+			|| !ft_strcmp(s[i], "'>'") || !ft_strcmp(s[i], "'>>'")
+			|| !ft_strcmp(s[i], "\"<\"") || !ft_strcmp(s[i], "\"<<\"")
+			|| !ft_strcmp(s[i], "\">\"") || !ft_strcmp(s[i], "\">>\""))
 			return (1);
 		i++;
 	}
@@ -1059,7 +1053,8 @@ void	executecommands(t_list *data, char **envp, int type)
 	data->execcmds = malloc(sizeof(char *) * (i + 1));
 	if (!data->execcmds)
 		exit(EXIT_FAILURE);
-	if (is_absolute_path(data->commandsarr[0]))
+	if (data->commandsarr[0] && (data->commandsarr[0][0] == '/'
+		|| !ft_strncmp(data->commandsarr[0], "./", 2)))
 		data->execcmds[0] = ft_strdup(data->commandsarr[0]);
 	else
 		data->execcmds[0] = data->path;
@@ -1571,7 +1566,6 @@ void	strip_quotes(char *str)
 	str[j] = '\0';
 }
 
-// ft_exit(data->commandsarr)
 void	ft_exit(t_list *data)
 {
 	int		exit_status;
@@ -1697,8 +1691,11 @@ void	parse_for_comments(char **input)
 
 void	handle_external_commands(t_list *data, char **envp)
 {
+	char	*cmd;
+
 	data->path = ft_getpath(data);
-	if (data->path || is_absolute_path(data->commandsarr[0]))
+	cmd = data->commandsarr[0];
+	if (data->path || (cmd && (*cmd == '/' || !ft_strncmp(cmd, "./", 2))))
 	{
 		executecommands(data, envp, 0);
 		wait(NULL);
@@ -1737,15 +1734,10 @@ void	execute_specific_command(t_list *data, char **envp)
 		handle_external_commands(data, envp);
 }
 
-void	cleanup_and_exit(t_list *data)
-{
-	ft_exit(data);
-}
-
 void	execute_command(t_list *data, char **envp)
 {
 	if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-		cleanup_and_exit(data);
+		ft_exit(data);
 	else
 		execute_specific_command(data, envp);
 }
