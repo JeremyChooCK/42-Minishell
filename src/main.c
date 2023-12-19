@@ -841,6 +841,8 @@ void	reassign_and_handle_heredoc(t_list *data, int index)
 		free(temp);
 		free(s);
 	}
+	else
+		free(temp);
 }
 
 void	open_output_file(t_list *data, int index)
@@ -912,6 +914,8 @@ void	handle_output_redirection(t_list *data, int index)
 		free(temp);
 		free(s);
 	}
+	else
+		free(temp);
 }
 
 void	move_forward_and_check_for_append(t_list *data, int index)
