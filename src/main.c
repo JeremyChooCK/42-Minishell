@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/18 23:42:03 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/19 19:33:14 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -496,16 +496,12 @@ void	replace_exit_status(char **command, char *exit_status)
 	}
 }
 
-int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
+void	process_commands(
+	t_list *data, char **envp, char **strarr, int numofpipes)
 {
-	char	*temp;
-	char	**strarr;
-	int		type;
+	int	type;
 
 	type = 1;
-	temp = reassign_prompt(data->prompt);
-	strarr = ft_split(temp, '|');
-	free(temp);
 	while (data->i < numofpipes + 1)
 	{
 		data->commandsarr = ft_split_space(strarr[data->i]);
@@ -519,6 +515,17 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 		data->execcmds = NULL;
 		data->i++;
 	}
+}
+
+int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
+{
+	char	*temp;
+	char	**strarr;
+
+	temp = reassign_prompt(data->prompt);
+	strarr = ft_split(temp, '|');
+	free(temp);
+	process_commands(data, envp, strarr, numofpipes);
 	ft_freesplit(strarr);
 	data->i = 0;
 	dup2(data->stdin, STDIN_FILENO);
@@ -556,7 +563,6 @@ int	getcmd(t_list *data, char **envp)
 	result = process_command_parts(data, cmd_parts, &numofpipes);
 	if (result < 0)
 		return (-1);
-	// ft_freesplit(cmd_parts);
 	return (execute_commands(data, envp, numofpipes));
 }
 
