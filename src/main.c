@@ -516,6 +516,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 		data->execcmds = NULL;
 		data->i++;
 	}
+	ft_freesplit(strarr);
 	data->i = 0;
 	dup2(data->stdin, STDIN_FILENO);
 	dup2(data->stdout, STDOUT_FILENO);
