@@ -424,6 +424,7 @@ int	process_command_parts(t_list *data, char **cmd_parts, int *numofpipes)
 		return (-1);
 	if (expand_variables_and_count_pipes(cmd_parts, data, numofpipes) < 0)
 		return (-1);
+	free(cmd_parts);
 	return (0);
 }
 
@@ -555,7 +556,7 @@ int	getcmd(t_list *data, char **envp)
 	result = process_command_parts(data, cmd_parts, &numofpipes);
 	if (result < 0)
 		return (-1);
-	ft_freesplit(cmd_parts);
+	// ft_freesplit(cmd_parts);
 	return (execute_commands(data, envp, numofpipes));
 }
 
@@ -782,6 +783,7 @@ void	move_commands_forward(t_list *data, int index)
 void	handle_input_redirection(t_list *data, int index)
 {
 	char	*temp;
+	// char	*temp2;
 
 	open_infile_and_redirect_input(data, index);
 	move_commands_forward(data, index);
@@ -789,6 +791,7 @@ void	handle_input_redirection(t_list *data, int index)
 	data->commandsarr[0] = NULL;
 	data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 	temp = data->execcmds[0];
+	// temp2 = ft_getpath(data);
 	if (!(access(ft_getpath(data), X_OK)))
 	{
 		data->execcmds[0] = ft_getpath(data);
