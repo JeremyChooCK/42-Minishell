@@ -779,6 +779,7 @@ void	move_commands_forward(t_list *data, int index)
 void	handle_input_redirection(t_list *data, int index)
 {
 	char	*temp;
+	char	*temp2;
 
 	open_infile_and_redirect_input(data, index);
 	move_commands_forward(data, index);
@@ -786,10 +787,14 @@ void	handle_input_redirection(t_list *data, int index)
 	data->commandsarr[0] = NULL;
 	data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 	temp = data->execcmds[0];
-	if (!(access(ft_getpath(data), X_OK)))
+	temp2 = ft_getpath(data);
+	if(temp2)
 	{
-		data->execcmds[0] = ft_getpath(data);
-		free(temp);
+		if (!(access(temp2, X_OK)))
+		{
+			data->execcmds[0] = temp2;
+			free(temp);
+		}
 	}
 	free(data->commandsarr[0]);
 	data->commandsarr[0] = NULL;
