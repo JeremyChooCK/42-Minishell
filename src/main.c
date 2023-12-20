@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/19 19:50:52 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/20 21:27:25 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -788,7 +788,7 @@ void	handle_input_redirection(t_list *data, int index)
 	data->commandsarr[0] = ft_strdup(data->execcmds[0]);
 	temp = data->execcmds[0];
 	temp2 = ft_getpath(data);
-	if(temp2)
+	if (temp2)
 	{
 		if (!(access(temp2, X_OK)))
 		{
@@ -1084,40 +1084,22 @@ void	handle_parent_process(t_list *data, int type, int id)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	execute_builtin_commands(t_list *data)
+void	execute_command(char *command, t_list *data)
 {
-	if (ft_strcmp(data->execcmds[0], "echo") == 0)
-	{
+	if (ft_strcmp(command, "echo") == 0)
 		g_exit_code = ft_echo(data->commandsarr + 1);
-		exit(1);
-	}
-	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
-	{
+	else if (ft_strcmp(command, "pwd") == 0)
 		g_exit_code = ft_pwd();
-		exit(1);
-	}
-	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-	{
+	else if (ft_strcmp(command, "export") == 0)
 		ft_export(data->commandsarr[1], &(data->env_vars));
-		exit(1);
-	}
-	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-	{
+	else if (ft_strcmp(command, "unset") == 0)
 		ft_unset(data->commandsarr + 1, &(data->env_vars));
-		exit(1);
-	}
-	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-	{
+	else if (ft_strcmp(command, "env") == 0)
 		ft_env(data->env_vars);
-		exit(1);
-	}
-	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+	else if (ft_strcmp(command, "exit") == 0)
 		ft_exit(data);
-	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
-	{
+	else if (ft_strcmp(command, "history") == 0)
 		ft_display_history(data);
-		exit(1);
-	}
 }
 
 void	manage_process_and_signals(t_list *data, int type, char **envp)
@@ -1145,7 +1127,10 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 		close(data->pipefd[0]);
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
-			execute_builtin_commands(data);
+		{
+			execute_command(data->commandsarr[0], data);
+			exit(1);
+		}
 		if (data->execcmds[0] != NULL)
 		{
 			remove_quotes_from_args(data->execcmds);
@@ -1165,7 +1150,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 		handle_parent_process(data, type, id);
 }
 
-void executecommands(t_list *data, char **envp, int type)
+void	executecommands(t_list *data, char **envp, int type)
 {
 	prepare_command_arrays(data);
 	if (!check_for_redirection(data->execcmds))
