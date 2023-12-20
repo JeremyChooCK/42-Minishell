@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/20 21:27:25 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/20 21:31:05 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1084,7 +1084,7 @@ void	handle_parent_process(t_list *data, int type, int id)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	execute_command(char *command, t_list *data)
+void	execute_buildin_command(char *command, t_list *data)
 {
 	if (ft_strcmp(command, "echo") == 0)
 		g_exit_code = ft_echo(data->commandsarr + 1);
@@ -1128,7 +1128,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
 		{
-			execute_command(data->commandsarr[0], data);
+			execute_buildin_command(data->commandsarr[0], data);
 			exit(1);
 		}
 		if (data->execcmds[0] != NULL)
@@ -1733,13 +1733,6 @@ void	execute_command(t_list *data, char **envp)
 		execute_specific_command(data, envp);
 }
 
-void	cleanup_command(t_list *data)
-{
-	free(data->path);
-	if (data->prompt != NULL)
-		free(data->prompt);
-}
-
 void	handle_command(t_list *data, char **envp)
 {
 	parse_for_comments(&(data->prompt));
@@ -1752,7 +1745,9 @@ void	handle_command(t_list *data, char **envp)
 	}
 	else
 		g_exit_code = 0;
-	cleanup_command(data);
+	free(data->path);
+	if (data->prompt != NULL)
+		free(data->prompt);
 }
 
 void	ft_display_prompt(t_list *data, char **envp)
