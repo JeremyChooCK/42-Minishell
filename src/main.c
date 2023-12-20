@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/20 21:31:05 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/20 22:14:22 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1084,22 +1084,55 @@ void	handle_parent_process(t_list *data, int type, int id)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	execute_buildin_command(char *command, t_list *data)
+void	execute_buildin2(t_list *data)
 {
-	if (ft_strcmp(command, "echo") == 0)
-		g_exit_code = ft_echo(data->commandsarr + 1);
-	else if (ft_strcmp(command, "pwd") == 0)
-		g_exit_code = ft_pwd();
-	else if (ft_strcmp(command, "export") == 0)
-		ft_export(data->commandsarr[1], &(data->env_vars));
-	else if (ft_strcmp(command, "unset") == 0)
+	if (ft_strcmp(data->commandsarr[0], "unset") == 0)
+	{
 		ft_unset(data->commandsarr + 1, &(data->env_vars));
-	else if (ft_strcmp(command, "env") == 0)
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
+	{
 		ft_env(data->env_vars);
-	else if (ft_strcmp(command, "exit") == 0)
-		ft_exit(data);
-	else if (ft_strcmp(command, "history") == 0)
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
+	{
 		ft_display_history(data);
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+	{
+		ft_exit(data);
+		exit(1);
+	}
+}
+
+// data->execcmds[0] for echo fix the test cases, do not touch that
+void	execute_buildin(t_list *data)
+{
+	if (ft_strcmp(data->execcmds[0], "echo") == 0)
+	{
+		g_exit_code = ft_echo(data->commandsarr + 1);
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
+	{
+		g_exit_code = checkdir(data->commandsarr + 1);
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
+	{
+		g_exit_code = ft_pwd();
+		exit(1);
+	}
+	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
+	{
+		ft_export(data->commandsarr[1], &(data->env_vars));
+		exit(1);
+	}
+	else
+		execute_buildin2(data);
 }
 
 void	manage_process_and_signals(t_list *data, int type, char **envp)
@@ -1127,10 +1160,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 		close(data->pipefd[0]);
 		close(data->pipefd[1]);
 		if (data->commandsarr[0])
-		{
-			execute_buildin_command(data->commandsarr[0], data);
-			exit(1);
-		}
+			execute_buildin(data);
 		if (data->execcmds[0] != NULL)
 		{
 			remove_quotes_from_args(data->execcmds);
