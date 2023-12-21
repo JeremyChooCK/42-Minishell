@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 22:01:36 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 22:09:53 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1538,12 +1538,9 @@ int	parse_export_argument(char *arg, char **key, char **value)
 	return (1);
 }
 
-void	add_to_env_list(char *key, char *value, t_env_list **env_list)
+int	update_env_var(char *key, char *value, t_env_list **env_list)
 {
-	t_env_list	*new_node;
 	t_env_list	*current;
-	char		*env_str;
-	char		*temp;
 
 	current = *env_list;
 	while (current != NULL)
@@ -1553,10 +1550,20 @@ void	add_to_env_list(char *key, char *value, t_env_list **env_list)
 			free(current->env_var.value);
 			current->env_var.value = value;
 			free(key);
-			return ;
+			return (1);
 		}
 		current = current->next;
 	}
+	return (0);
+}
+
+void	add_new_env_var(char *key, char *value, t_env_list **env_list)
+{
+	t_env_list	*new_node;
+	t_env_list	*current;
+	char		*env_str;
+	char		*temp;
+
 	env_str = ft_strjoin(key, "=");
 	temp = env_str;
 	env_str = ft_strjoin(env_str, value);
@@ -1580,6 +1587,12 @@ void	add_to_env_list(char *key, char *value, t_env_list **env_list)
 	}
 	free(key);
 	free(value);
+}
+
+void	add_to_env_list(char *key, char *value, t_env_list **env_list)
+{
+	if (!update_env_var(key, value, env_list))
+		add_new_env_var(key, value, env_list);
 }
 
 void	ft_export(char *arg, t_env_list **env_list)
