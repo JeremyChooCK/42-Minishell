@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 21:26:29 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 22:01:36 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1511,41 +1511,42 @@ int	is_valid_identifier(char *str)
 	return (1);
 }
 
-void	ft_export(char *arg, t_env_list **env_list)
+int	parse_export_argument(char *arg, char **key, char **value)
 {
-	char		*key;
-	char		*value;
-	char		*separator;
-	t_env_list	*current;
-	t_env_list	*new_node;
+	char	*separator;
 
-	if (!arg || !env_list)
-	{
-		g_exit_code = 1;
-		return ;
-	}
+	if (!arg)
+		return (0);
 	separator = ft_strchr(arg, '=');
 	if (separator)
 	{
-		key = ft_strndup(arg, separator - arg);
-		value = ft_strdup(separator + 1);
+		*key = ft_strndup(arg, separator - arg);
+		*value = ft_strdup(separator + 1);
 	}
 	else
 	{
-		key = ft_strdup(arg);
-		value = ft_strdup("");
+		*key = ft_strdup(arg);
+		*value = ft_strdup("");
 	}
-	key = ft_strndup(arg, separator - arg);
-	if (!is_valid_identifier(key))
+	if (!is_valid_identifier(*key))
 	{
 		ft_putstr_fd(" not a valid identifier\n", 2);
-		free(key);
-		free(value);
-		g_exit_code = 1;
-		return ;
+		free(*key);
+		free(*value);
+		return (0);
 	}
-	g_exit_code = 0;
-	for (current = *env_list; current != NULL; current = current->next)
+	return (1);
+}
+
+void	add_to_env_list(char *key, char *value, t_env_list **env_list)
+{
+	t_env_list	*new_node;
+	t_env_list	*current;
+	char		*env_str;
+	char		*temp;
+
+	current = *env_list;
+	while (current != NULL)
 	{
 		if (ft_strcmp(current->env_var.key, key) == 0)
 		{
@@ -1554,8 +1555,14 @@ void	ft_export(char *arg, t_env_list **env_list)
 			free(key);
 			return ;
 		}
+		current = current->next;
 	}
-	new_node = create_env_node(arg);
+	env_str = ft_strjoin(key, "=");
+	temp = env_str;
+	env_str = ft_strjoin(env_str, value);
+	free(temp);
+	new_node = create_env_node(env_str);
+	free(env_str);
 	if (!new_node)
 	{
 		free(key);
@@ -1573,6 +1580,20 @@ void	ft_export(char *arg, t_env_list **env_list)
 	}
 	free(key);
 	free(value);
+}
+
+void	ft_export(char *arg, t_env_list **env_list)
+{
+	char	*key;
+	char	*value;
+
+	if (!parse_export_argument(arg, &key, &value))
+	{
+		g_exit_code = 1;
+		return ;
+	}
+	add_to_env_list(key, value, env_list);
+	g_exit_code = 0;
 }
 
 void	ft_unset(char **args, t_env_list **env_list)
