@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 23:22:30 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 23:33:44 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -293,6 +293,7 @@ void	handle_variable(char **src, char **dest, char *start, size_t var_len)
 	ft_strcpy(*dest, var_value);
 	*dest += ft_strlen(var_value);
 	free(var_name);
+	free(var_value);
 	*src = start + var_len;
 }
 
@@ -401,10 +402,10 @@ int	expand_variables_and_count_pipes(
 		expanded_cmd = expand_env_variables(cmd_parts[i], 1);
 		if (expanded_cmd)
 			cmd_parts[i] = expanded_cmd;
+		free(expanded_cmd);
 		i++;
 	}
 	*numofpipes = checkforpipe(data->prompt);
-	free(expanded_cmd);
 	return (0);
 }
 
