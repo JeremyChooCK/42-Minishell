@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 22:39:27 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 23:06:12 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1698,37 +1698,53 @@ void	strip_quotes(char *str)
 	str[j] = '\0';
 }
 
-int	process_exit_args(t_list *data)
+char	*validate_exit_argument(t_list *data)
 {
 	char	*arg;
-	int		exit_status;
 
-	exit_status = g_exit_code;
 	if (data->commandsarr[1])
 	{
 		if (data->commandsarr[2])
 		{
 			ft_putstr_fd("exit: too many arguments\n", 2);
-			return (-1);
+			return (ft_strdup("-1"));
 		}
 		arg = ft_strdup(data->commandsarr[1]);
 		if (!arg)
-		{
-			perror("Error allocating memory");
-			return (-1);
-		}
+			return (NULL);
 		strip_quotes(arg);
-		if (is_valid_number(arg))
-			exit_status = ft_atoi(arg);
-		else
+		if (!is_valid_number(arg))
 		{
 			ft_putstr_fd("exit: numeric argument required\n", 2);
 			free(arg);
-			return (-2);
+			return (ft_strdup("-2"));
 		}
-		free(arg);
 	}
-	return (exit_status);
+	else
+		arg = NULL;
+	return (arg);
+}
+
+int	process_exit_args(t_list *data)
+{
+	char	*validated_arg;
+
+	validated_arg = validate_exit_argument(data);
+	if (validated_arg == NULL && data->commandsarr[1])
+		return (1);
+	if (validated_arg && strcmp(validated_arg, "-1") == 0)
+	{
+		free(validated_arg);
+		return (1);
+	}
+	if (validated_arg && strcmp(validated_arg, "-2") == 0)
+	{
+		free(validated_arg);
+		return (2);
+	}
+	if (validated_arg)
+		return (ft_atoi(validated_arg));
+	return (0);
 }
 
 void	ft_exit(t_list *data)
