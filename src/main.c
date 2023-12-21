@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 20:03:27 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 21:26:29 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1164,7 +1164,7 @@ void	handle_child_process(
 			ft_putstr_fd("minishell: ", 2);
 			ft_putstr_fd(data->execcmds[0], 2);
 			ft_putstr_fd(": Permission denied\n", 2);
-			exit(127);
+			exit(126);
 		}
 	}
 	g_exit_code = EXIT_FAILURE;
@@ -1419,18 +1419,12 @@ void	echo_out(char **str, int pos)
 	}
 }
 
-int	ft_echo(char **args)
+int	process_flags(char **args, int *n_flag)
 {
 	int	i;
 	int	j;
-	int	n_flag;
 
-	n_flag = 0;
-	if (!args[0])
-	{
-		printf("\n");
-		return (0);
-	}
+	*n_flag = 0;
 	i = 0;
 	while (args[i] && args[i][0] == '-')
 	{
@@ -1438,11 +1432,25 @@ int	ft_echo(char **args)
 		while (args[i][j] == 'n')
 			j++;
 		if (args[i][j] == '\0')
-			n_flag = 1;
+			*n_flag = 1;
 		else
 			break ;
 		i++;
 	}
+	return (i);
+}
+
+int	ft_echo(char **args)
+{
+	int	i;
+	int	n_flag;
+
+	if (!args[0])
+	{
+		printf("\n");
+		return (0);
+	}
+	i = process_flags(args, &n_flag);
 	while (args[i])
 	{
 		echo_out(args, i);
