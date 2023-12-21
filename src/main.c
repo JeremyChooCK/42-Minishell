@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 19:45:25 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 20:03:27 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1269,16 +1269,18 @@ char	*parse_env_var(const char *input)
 		return (ft_strdup(input));
 }
 
-char	*validate_and_resolve_path(char **args)
+char	*validate_arguments(char **args)
 {
-	char	*path;
-
 	if (args && args[0] && args[1])
 	{
 		ft_putstr_fd("cd: too many arguments\n", 2);
 		return (NULL);
 	}
-	path = args[0];
+	return (args[0]);
+}
+
+char	*resolve_path(char *path)
+{
 	if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
 		path = getenv("HOME");
@@ -1299,6 +1301,16 @@ char	*validate_and_resolve_path(char **args)
 		printf("%s\n", path);
 	}
 	return (parse_env_var(path));
+}
+
+char	*validate_and_resolve_path(char **args)
+{
+	char	*path;
+
+	path = validate_arguments(args);
+	if (path == NULL)
+		return (NULL);
+	return (resolve_path(path));
 }
 
 int	change_directory(char *path)
@@ -1328,36 +1340,59 @@ int	checkdir(char **args)
 	return (change_directory(resolved_path));
 }
 
+int	update_quote(int *i, char c, int *in_single_quote, int *in_double_quote)
+{
+	int	check;
+
+	check = 0;
+	if (c == '\'' && !*in_double_quote)
+	{
+		*in_single_quote = !*in_single_quote;
+		(*i)++;
+		check = 1;
+	}
+	if (c == '\"' && !*in_single_quote)
+	{
+		*in_double_quote = !*in_double_quote;
+		(*i)++;
+		check = 1;
+	}
+	return (check);
+}
+
+void	check_quotes(int *i, int *output_index, char *output)
+{
+	if (*output_index > 0 && output[(*output_index) - 1] != ' ')
+	{
+		output[(*output_index)++] = ' ';
+		(*i)++;
+	}
+}
+
 void	parse_and_print_echo(char *input)
 {
+	int		i;
 	int		in_single_quote;
 	int		in_double_quote;
 	char	output[MAX_INPUT_LENGTH];
-	int		output_index = 0;
+	int		output_index;
 
 	ft_memset(output, 0, sizeof(output));
 	output_index = 0;
 	in_single_quote = 0;
 	in_double_quote = 0;
-	for (int i = 0; i < (int)ft_strlen(input); ++i)
+	i = 0;
+	while (i < (int)ft_strlen(input))
 	{
-		if (input[i] == '\'' && !in_double_quote)
-		{
-			in_single_quote = !in_single_quote;
+		if (update_quote(&i, input[i], &in_single_quote, &in_double_quote))
 			continue ;
-		}
-		if (input[i] == '\"' && !in_single_quote)
-		{
-			in_double_quote = !in_double_quote;
-			continue ;
-		}
 		if (input[i] == ' ' && !in_single_quote && !in_double_quote)
 		{
 			if (output_index > 0 && output[output_index - 1] != ' ')
-				output[output_index++] = ' ';
+				check_quotes(&i, &output_index, output);
 			continue ;
 		}
-		output[output_index++] = input[i];
+		output[output_index++] = input[i++];
 	}
 	printf("%s", output);
 }
