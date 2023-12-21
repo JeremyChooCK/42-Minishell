@@ -1135,6 +1135,42 @@ void	execute_buildin(t_list *data)
 		execute_buildin2(data);
 }
 
+void	check_for_redirection_and_close_pipe(t_list *data, int type)
+{
+	inputredirection(data);
+	if (type == 1)
+		dup2(data->pipefd[1], 1);
+	if (type == 2)
+		dup2(data->stdout, 1);
+	outputredirection(data);
+	close(data->pipefd[0]);
+	close(data->pipefd[1]);
+}
+
+void	handle_child_process(t_list *data, char **envp,
+							int type, struct stat buff)
+{
+	signal(SIGINT, SIG_DFL);
+	signal(SIGQUIT, SIG_DFL);
+	check_for_redirection_and_close_pipe(data, type);
+	if (data->commandsarr[0])
+		execute_buildin(data);
+	if (data->execcmds[0] != NULL)
+	{
+		remove_quotes_from_args(data->execcmds);
+		execve(data->execcmds[0], data->execcmds, envp);
+		if (stat(data->execcmds[0], &buff) == 0)
+		{
+			ft_putstr_fd("minishell: ", 2);
+			ft_putstr_fd(data->execcmds[0], 2);
+			ft_putstr_fd(": Permission denied\n", 2);
+			exit(127);
+		}
+	}
+	g_exit_code = EXIT_FAILURE;
+	exit(EXIT_FAILURE);
+}
+
 void	manage_process_and_signals(t_list *data, int type, char **envp)
 {
 	int			id;
@@ -1148,34 +1184,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 	if (id == -1)
 		exit(1);
 	if (id == 0)
-	{
-		signal(SIGINT, SIG_DFL);
-		signal(SIGQUIT, SIG_DFL);
-		inputredirection(data);
-		if (type == 1)
-			dup2(data->pipefd[1], 1);
-		if (type == 2)
-			dup2(data->stdout, 1);
-		outputredirection(data);
-		close(data->pipefd[0]);
-		close(data->pipefd[1]);
-		if (data->commandsarr[0])
-			execute_buildin(data);
-		if (data->execcmds[0] != NULL)
-		{
-			remove_quotes_from_args(data->execcmds);
-			execve(data->execcmds[0], data->execcmds, envp);
-			if (stat(data->execcmds[0], &buff) == 0)
-			{
-				ft_putstr_fd("minishell: ", 2);
-				ft_putstr_fd(data->execcmds[0], 2);
-				ft_putstr_fd(": Permission denied\n", 2);
-				exit(127);
-			}
-		}
-		g_exit_code = EXIT_FAILURE;
-		exit(EXIT_FAILURE);
-	}
+		handle_child_process(data, envp, type, buff);
 	else
 		handle_parent_process(data, type, id);
 }
@@ -1304,35 +1313,36 @@ int	checkdir(char **args)
 
 void	parse_and_print_echo(char *input)
 {
-    int in_single_quote;
-    int in_double_quote;
-    char output[MAX_INPUT_LENGTH] = {0};
-    int output_index = 0;
+	int		in_single_quote;
+	int		in_double_quote;
+	char	output[MAX_INPUT_LENGTH];
+	int		output_index;
 
+	output[MAX_INPUT_LENGTH] = {0};
+	output_index = 0;
 	in_single_quote = 0;
 	in_double_quote = 0;
-    for (int i = 0; i < (int)ft_strlen(input); ++i) {
-        if (input[i] == '\'' && !in_double_quote) {
-            in_single_quote = !in_single_quote;
-            continue;
-        }
-
-        if (input[i] == '\"' && !in_single_quote) {
-            in_double_quote = !in_double_quote;
-            continue;
-        }
-
-        if (input[i] == ' ' && !in_single_quote && !in_double_quote) {
-            if (output_index > 0 && output[output_index - 1] != ' ') {
-                output[output_index++] = ' ';
-            }
-            continue;
-        }
-
-        output[output_index++] = input[i];
-    }
-
-    printf("%s", output);
+	for (int i = 0; i < (int)ft_strlen(input); ++i)
+	{
+		if (input[i] == '\'' && !in_double_quote)
+		{
+			in_single_quote = !in_single_quote;
+			continue ;
+		}
+		if (input[i] == '\"' && !in_single_quote)
+		{
+			in_double_quote = !in_double_quote;
+			continue ;
+		}
+		if (input[i] == ' ' && !in_single_quote && !in_double_quote)
+		{
+			if (output_index > 0 && output[output_index - 1] != ' ')
+				output[output_index++] = ' ';
+			continue ;
+		}
+		output[output_index++] = input[i];
+	}
+	printf("%s", output);
 }
 
 void	echo_out(char **str, int pos)
@@ -1443,10 +1453,10 @@ int	is_valid_identifier(char *str)
 
 void	ft_export(char *arg, t_env_list **env_list)
 {
-    char		*key;
-    char		*value;
+	char		*key;
+	char		*value;
 	char		*separator;
-    t_env_list	*current;
+	t_env_list	*current;
 	t_env_list	*new_node;
 
 	if (!arg || !env_list)
@@ -1475,32 +1485,32 @@ void	ft_export(char *arg, t_env_list **env_list)
 		return ;
 	}
 	g_exit_code = 0;
-    for (current = *env_list; current != NULL; current = current->next)
-    {
-        if (ft_strcmp(current->env_var.key, key) == 0)
-        {
-            free(current->env_var.value);
-            current->env_var.value = value;
-            free(key);
-            return ;
-        }
-    }
+	for (current = *env_list; current != NULL; current = current->next)
+	{
+		if (ft_strcmp(current->env_var.key, key) == 0)
+		{
+			free(current->env_var.value);
+			current->env_var.value = value;
+			free(key);
+			return ;
+		}
+	}
 	new_node = create_env_node(arg);
-    if (!new_node)
-    {
-        free(key);
-        free(value);
-        return ;
-    }
-    current = *env_list;
-    if (!current)
-        *env_list = new_node;
-    else
-    {
-        while (current->next != NULL)
-            current = current->next;
-        current->next = new_node;
-    }
+	if (!new_node)
+	{
+		free(key);
+		free(value);
+		return ;
+	}
+	current = *env_list;
+	if (!current)
+		*env_list = new_node;
+	else
+	{
+		while (current->next != NULL)
+			current = current->next;
+		current->next = new_node;
+	}
 	free(key);
 	free(value);
 }
@@ -1518,24 +1528,24 @@ void	ft_unset(char **args, t_env_list **env_list)
 	while (args[i] != NULL)
 	{
 		arg = args[i];
-	    current = *env_list;
-	    prev = NULL;
-	    while (current != NULL)
+		current = *env_list;
+		prev = NULL;
+		while (current != NULL)
 		{
-	        if (ft_strcmp(current->env_var.key, arg) == 0)
+			if (ft_strcmp(current->env_var.key, arg) == 0)
 			{
-	            if (prev == NULL)
-	                *env_list = current->next;
-	            else
-	                prev->next = current->next;
-	            free(current->env_var.key);
-	            free(current->env_var.value);
-	            free(current);
-	            break ;
-	        }
-	        prev = current;
-	        current = current->next;
-	    }
+				if (prev == NULL)
+					*env_list = current->next;
+				else
+					prev->next = current->next;
+				free(current->env_var.key);
+				free(current->env_var.value);
+				free(current);
+				break ;
+			}
+			prev = current;
+			current = current->next;
+		}
 		i++;
 	}
 	g_exit_code = 0;
@@ -1629,7 +1639,7 @@ void	ft_exit(t_list *data)
 int	calculate_new_length(const char *prompt)
 {
 	int	i;
-	int len;
+	int	len;
 	int	in_single_quote;
 	int	in_double_quote;
 
@@ -1659,21 +1669,13 @@ int	calculate_new_length(const char *prompt)
 	return (len);
 }
 
-char	*reassign_prompt(const char *prompt)
+void	check_for_quotes_and_add_spaces(const char *prompt, char *s)
 {
-	int		i;
-	int		j;
-	int		new_len;
-	int		in_single_quote;
-	int		in_double_quote;
-	char	*s;
+	int	i;
+	int	j;
+	int	in_single_quote;
+	int	in_double_quote;
 
-	if (prompt == NULL)
-		return (NULL);
-	new_len = calculate_new_length(prompt);
-	s = malloc(new_len + 1);
-	if (!s)
-		return (NULL);
 	in_single_quote = 0;
 	in_double_quote = 0;
 	i = 0;
@@ -1698,6 +1700,20 @@ char	*reassign_prompt(const char *prompt)
 		i++;
 	}
 	s[j] = '\0';
+}
+
+char	*reassign_prompt(const char *prompt)
+{
+	int		new_len;
+	char	*s;
+
+	if (prompt == NULL)
+		return (NULL);
+	new_len = calculate_new_length(prompt);
+	s = malloc(new_len + 1);
+	if (!s)
+		return (NULL);
+	check_for_quotes_and_add_spaces(prompt, s);
 	return (s);
 }
 
@@ -1820,14 +1836,14 @@ void	ft_init_t_env(char **envp, t_env_list **env_list)
 
 	if (env_list != NULL)
 		*env_list = NULL;
-    if (envp == NULL || env_list == NULL)
-        return ;
-    i = 0;
-    while (envp[i] != NULL)
-    {
-        add_env_node(envp[i], env_list);
-        i++;
-    }
+	if (envp == NULL || env_list == NULL)
+		return ;
+	i = 0;
+	while (envp[i] != NULL)
+	{
+		add_env_node(envp[i], env_list);
+		i++;
+	}
 }
 
 int	main(int argc, char **argv, char **envp)
