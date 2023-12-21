@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 22:16:45 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 22:25:13 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1617,39 +1617,38 @@ void	ft_export(char *arg, t_env_list **env_list)
 	g_exit_code = 0;
 }
 
-void	ft_unset(char **args, t_env_list **env_list)
+void	remove_env_var(char *arg, t_env_list **env_list, t_env_list *prev)
 {
 	t_env_list	*current;
-	t_env_list	*prev;
-	char		*arg;
-	int			i;
 
-	i = 0;
+	current = *env_list;
+	while (current != NULL)
+	{
+		if (ft_strcmp(current->env_var.key, arg) == 0)
+		{
+			if (prev == NULL)
+				*env_list = current->next;
+			else
+				prev->next = current->next;
+			free(current->env_var.key);
+			free(current->env_var.value);
+			free(current);
+			break ;
+		}
+		prev = current;
+		current = current->next;
+	}
+}
+
+void	ft_unset(char **args, t_env_list **env_list)
+{
+	int	i;
+
 	if (!args || !env_list || !*env_list)
 		return ;
+	i = 0;
 	while (args[i] != NULL)
-	{
-		arg = args[i];
-		current = *env_list;
-		prev = NULL;
-		while (current != NULL)
-		{
-			if (ft_strcmp(current->env_var.key, arg) == 0)
-			{
-				if (prev == NULL)
-					*env_list = current->next;
-				else
-					prev->next = current->next;
-				free(current->env_var.key);
-				free(current->env_var.value);
-				free(current);
-				break ;
-			}
-			prev = current;
-			current = current->next;
-		}
-		i++;
-	}
+		remove_env_var(args[i++], env_list, NULL);
 	g_exit_code = 0;
 }
 
