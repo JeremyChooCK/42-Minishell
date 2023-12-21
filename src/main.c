@@ -1315,11 +1315,9 @@ void	parse_and_print_echo(char *input)
 {
 	int		in_single_quote;
 	int		in_double_quote;
-	char	output[MAX_INPUT_LENGTH];
-	int		output_index;
+	char	output[MAX_INPUT_LENGTH] = {0};
+	int		output_index = 0;
 
-	output[MAX_INPUT_LENGTH] = {0};
-	output_index = 0;
 	in_single_quote = 0;
 	in_double_quote = 0;
 	for (int i = 0; i < (int)ft_strlen(input); ++i)
