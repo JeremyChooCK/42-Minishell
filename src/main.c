@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 19:42:52 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 19:45:25 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1333,7 +1333,7 @@ void	parse_and_print_echo(char *input)
 	int		in_single_quote;
 	int		in_double_quote;
 	char	output[MAX_INPUT_LENGTH];
-	int		output_index;
+	int		output_index = 0;
 
 	ft_memset(output, 0, sizeof(output));
 	output_index = 0;
