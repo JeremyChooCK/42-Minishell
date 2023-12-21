@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 22:25:13 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 22:39:27 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1698,26 +1698,24 @@ void	strip_quotes(char *str)
 	str[j] = '\0';
 }
 
-void	ft_exit(t_list *data)
+int	process_exit_args(t_list *data)
 {
-	int		exit_status;
 	char	*arg;
+	int		exit_status;
 
-	exit_status = 0;
+	exit_status = g_exit_code;
 	if (data->commandsarr[1])
 	{
 		if (data->commandsarr[2])
 		{
 			ft_putstr_fd("exit: too many arguments\n", 2);
-			ft_free_list(data);
-			exit(1);
+			return (-1);
 		}
 		arg = ft_strdup(data->commandsarr[1]);
 		if (!arg)
 		{
 			perror("Error allocating memory");
-			ft_free_list(data);
-			exit(1);
+			return (-1);
 		}
 		strip_quotes(arg);
 		if (is_valid_number(arg))
@@ -1726,15 +1724,33 @@ void	ft_exit(t_list *data)
 		{
 			ft_putstr_fd("exit: numeric argument required\n", 2);
 			free(arg);
-			ft_free_list(data);
-			exit(2);
+			return (-2);
 		}
 		free(arg);
 	}
+	return (exit_status);
+}
+
+void	ft_exit(t_list *data)
+{
+	int	exit_status;
+
+	exit_status = process_exit_args(data);
+	if (exit_status == -1)
+	{
+		ft_free_list(data);
+		exit(1);
+	}
+	else if (exit_status == -2)
+	{
+		ft_free_list(data);
+		exit(2);
+	}
 	else
-		exit_status = g_exit_code;
-	ft_free_list(data);
-	exit(exit_status);
+	{
+		ft_free_list(data);
+		exit(exit_status);
+	}
 }
 
 int	calculate_new_length(const char *prompt)
