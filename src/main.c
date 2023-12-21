@@ -1269,16 +1269,18 @@ char	*parse_env_var(const char *input)
 		return (ft_strdup(input));
 }
 
-char	*validate_and_resolve_path(char **args)
+char	*validate_arguments(char **args)
 {
-	char	*path;
-
 	if (args && args[0] && args[1])
 	{
 		ft_putstr_fd("cd: too many arguments\n", 2);
 		return (NULL);
 	}
-	path = args[0];
+	return (args[0]);
+}
+
+char	*resolve_path(char *path)
+{
 	if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
 		path = getenv("HOME");
@@ -1299,6 +1301,16 @@ char	*validate_and_resolve_path(char **args)
 		printf("%s\n", path);
 	}
 	return (parse_env_var(path));
+}
+
+char	*validate_and_resolve_path(char **args)
+{
+	char	*path;
+
+	path = validate_arguments(args);
+	if (path == NULL)
+		return (NULL);
+	return (resolve_path(path));
 }
 
 int	change_directory(char *path)
@@ -1350,7 +1362,7 @@ int	update_quote(int *i, char c, int *in_single_quote, int *in_double_quote)
 
 void	check_quotes(int *i, int *output_index, char *output)
 {
-	if (output_index > 0 && output[(*output_index) - 1] != ' ')
+	if (*output_index > 0 && output[(*output_index) - 1] != ' ')
 	{
 		output[(*output_index)++] = ' ';
 		(*i)++;
