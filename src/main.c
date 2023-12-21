@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 23:06:12 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 23:13:47 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1769,6 +1769,15 @@ void	ft_exit(t_list *data)
 	}
 }
 
+void	parse_quotes(
+	const char *prompt, int *in_single_quote, int *in_double_quote, int i)
+{
+	if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
+		*in_single_quote = !*in_single_quote;
+	if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
+		*in_double_quote = !*in_double_quote;
+}
+
 int	calculate_new_length(const char *prompt)
 {
 	int	i;
@@ -1782,19 +1791,11 @@ int	calculate_new_length(const char *prompt)
 	i = 0;
 	while (prompt[i])
 	{
-		if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
-			in_single_quote = !in_single_quote;
-		if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
-			in_double_quote = !in_double_quote;
+		parse_quotes(prompt, &in_single_quote, &in_double_quote, i);
 		if (!in_single_quote && !in_double_quote)
 		{
 			if (prompt[i] == '<' || prompt[i] == '>')
-			{
-				if (prompt[i + 1] == prompt[i])
-					len += 4;
-				else
-					len += 2;
-			}
+				len = len + 2 + (2 * (prompt[i + 1] == prompt[i]));
 		}
 		len++;
 		i++;
