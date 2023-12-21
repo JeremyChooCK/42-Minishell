@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/20 22:14:22 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/21 19:45:25 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1147,8 +1147,8 @@ void	check_for_redirection_and_close_pipe(t_list *data, int type)
 	close(data->pipefd[1]);
 }
 
-void	handle_child_process(t_list *data, char **envp,
-							int type, struct stat buff)
+void	handle_child_process(
+	t_list *data, char **envp, int type, struct stat buff)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_DFL);
@@ -1176,6 +1176,7 @@ void	manage_process_and_signals(t_list *data, int type, char **envp)
 	int			id;
 	struct stat	buff;
 
+	ft_memset(&buff, 0, sizeof(buff));
 	if (pipe(data->pipefd) == -1)
 		exit(EXIT_FAILURE);
 	signal(SIGINT, SIG_IGN);
@@ -1268,15 +1269,14 @@ char	*parse_env_var(const char *input)
 		return (ft_strdup(input));
 }
 
-int	checkdir(char **args)
+char	*validate_and_resolve_path(char **args)
 {
-	char	cwd[4096];
 	char	*path;
 
 	if (args && args[0] && args[1])
 	{
 		ft_putstr_fd("cd: too many arguments\n", 2);
-		return (1);
+		return (NULL);
 	}
 	path = args[0];
 	if (path == NULL || ft_strcmp(path, "~") == 0)
@@ -1285,7 +1285,7 @@ int	checkdir(char **args)
 		if (path == NULL)
 		{
 			ft_putstr_fd("cd: HOME not set\n", 2);
-			return (1);
+			return (NULL);
 		}
 	}
 	else if (ft_strcmp(path, "-") == 0)
@@ -1294,16 +1294,25 @@ int	checkdir(char **args)
 		if (path == NULL)
 		{
 			ft_putstr_fd("cd: OLDPWD not set\n", 2);
-			return (1);
+			return (NULL);
 		}
 		printf("%s\n", path);
 	}
+	return (parse_env_var(path));
+}
+
+int	change_directory(char *path)
+{
+	char	cwd[4096];
+
+	if (path == NULL)
+		return (1);
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
 		perror("cd: getcwd failed");
 		return (1);
 	}
-	if (chdir(parse_env_var(path)) != 0)
+	if (chdir(path) != 0)
 	{
 		perror("cd");
 		return (1);
@@ -1311,13 +1320,23 @@ int	checkdir(char **args)
 	return (0);
 }
 
+int	checkdir(char **args)
+{
+	char	*resolved_path;
+
+	resolved_path = validate_and_resolve_path(args);
+	return (change_directory(resolved_path));
+}
+
 void	parse_and_print_echo(char *input)
 {
 	int		in_single_quote;
 	int		in_double_quote;
-	char	output[MAX_INPUT_LENGTH] = {0};
+	char	output[MAX_INPUT_LENGTH];
 	int		output_index = 0;
 
+	ft_memset(output, 0, sizeof(output));
+	output_index = 0;
 	in_single_quote = 0;
 	in_double_quote = 0;
 	for (int i = 0; i < (int)ft_strlen(input); ++i)
