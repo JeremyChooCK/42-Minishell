@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 22:09:53 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 22:16:45 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1557,17 +1557,25 @@ int	update_env_var(char *key, char *value, t_env_list **env_list)
 	return (0);
 }
 
-void	add_new_env_var(char *key, char *value, t_env_list **env_list)
+char	*create_env_str(char *key, char *value)
 {
-	t_env_list	*new_node;
-	t_env_list	*current;
-	char		*env_str;
-	char		*temp;
+	char	*env_str;
+	char	*temp;
 
 	env_str = ft_strjoin(key, "=");
 	temp = env_str;
 	env_str = ft_strjoin(env_str, value);
 	free(temp);
+	return (env_str);
+}
+
+void	add_new_env_var(char *key, char *value, t_env_list **env_list)
+{
+	t_env_list	*new_node;
+	t_env_list	*current;
+	char		*env_str;
+
+	env_str = create_env_str(key, value);
 	new_node = create_env_node(env_str);
 	free(env_str);
 	if (!new_node)
