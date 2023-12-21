@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 23:13:47 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/21 23:22:30 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1803,24 +1803,27 @@ int	calculate_new_length(const char *prompt)
 	return (len);
 }
 
-void	check_for_quotes_and_add_spaces(const char *prompt, char *s)
+void	update_quote_flags(
+	const char *prompt, int *in_single_quote, int *in_double_quote, int index)
+{
+	if (prompt[index] == '\'' && (index == 0 || prompt[index - 1] != '\\'))
+		*in_single_quote = !*in_single_quote;
+	if (prompt[index] == '\"' && (index == 0 || prompt[index - 1] != '\\'))
+		*in_double_quote = !*in_double_quote;
+}
+
+void	add_spaces(
+	const char *prompt, char *s, int *in_single_quote, int *in_double_quote)
 {
 	int	i;
 	int	j;
-	int	in_single_quote;
-	int	in_double_quote;
 
-	in_single_quote = 0;
-	in_double_quote = 0;
 	i = 0;
 	j = 0;
 	while (prompt[i])
 	{
-		if (prompt[i] == '\'' && (i == 0 || prompt[i - 1] != '\\'))
-			in_single_quote = !in_single_quote;
-		if (prompt[i] == '\"' && (i == 0 || prompt[i - 1] != '\\'))
-			in_double_quote = !in_double_quote;
-		if (!in_single_quote && !in_double_quote
+		update_quote_flags(prompt, in_single_quote, in_double_quote, i);
+		if (!*in_single_quote && !*in_double_quote
 			&& (prompt[i] == '<' || prompt[i] == '>'))
 		{
 			s[j++] = ' ';
@@ -1834,6 +1837,16 @@ void	check_for_quotes_and_add_spaces(const char *prompt, char *s)
 		i++;
 	}
 	s[j] = '\0';
+}
+
+void	check_for_quotes_and_add_spaces(const char *prompt, char *s)
+{
+	int	in_single_quote;
+	int	in_double_quote;
+
+	in_single_quote = 0;
+	in_double_quote = 0;
+	add_spaces(prompt, s, &in_single_quote, &in_double_quote);
 }
 
 char	*reassign_prompt(const char *prompt)
