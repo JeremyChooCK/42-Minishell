@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/22 19:14:51 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/22 20:19:47 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -381,7 +381,7 @@ int	process_and_split_command(t_list *data, char ***cmd_parts)
 		ft_putstr_fd("Error: Unmatched quotes in command.\n", 2);
 		return (-1);
 	}
-	*cmd_parts = ft_split_space(data->prompt);
+	*cmd_parts = ft_split_quote(data->prompt, ' ');
 	if (!*cmd_parts)
 	{
 		ft_putstr_fd("Error splitting command input.\n", 2);
@@ -495,7 +495,7 @@ void	process_commands(
 	type = 1;
 	while (data->i < numofpipes + 1)
 	{
-		data->commandsarr = ft_split_space(strarr[data->i]);
+		data->commandsarr = ft_split_quote(strarr[data->i], ' ');
 		data->path = ft_getpath(data);
 		if (data->i == numofpipes)
 			type = 2;
@@ -529,7 +529,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 	char	**strarr;
 
 	temp = reassign_prompt(data->prompt);
-	strarr = ft_split(temp, '|');
+	strarr = ft_split_quote(temp, '|');
 	free(temp);
 	if (check_if_pipe_is_valid(strarr, numofpipes))
 		process_commands(data, envp, strarr, numofpipes);
@@ -552,7 +552,7 @@ int	execute_commands(t_list *data, char **envp, int numofpipes)
 	{
 		temp = reassign_prompt(data->prompt);
 		ft_freesplit(data->commandsarr);
-		data->commandsarr = ft_split_space(temp);
+		data->commandsarr = ft_split_quote(temp, ' ');
 		free(temp);
 		if (data->commandsarr == NULL)
 			return (0);

@@ -23,7 +23,7 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_memmove.c \
 	ft_memset.c \
 	ft_split.c \
-	ft_split_space.c \
+	ft_split_quote.c \
 	ft_strcmp.c \
 	ft_strjoin.c \
 	ft_strncmp.c \
