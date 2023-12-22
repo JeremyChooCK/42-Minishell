@@ -1,22 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_split_space.c                                   :+:      :+:    :+:   */
+/*   ft_split_quote.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jechoo <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/07 12:25:32 by jechoo            #+#    #+#             */
-/*   Updated: 2023/12/18 23:37:37 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/22 20:10:11 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
-int	is_delimiter(char c, char quote)
+int	is_delimiter(char c, char quote, char delimiter)
 {
-	return (c == ' ' && quote == 0);
+	return ((c == delimiter) && quote == 0);
 }
 
-static int	count_words(const char *str)
+static int	count_words(const char *str, char delimiter)
 {
 	int		count;
 	char	quote;
@@ -25,11 +25,11 @@ static int	count_words(const char *str)
 	quote = 0;
 	while (*str)
 	{
-		while (*str && is_delimiter(*str, quote))
+		while (*str && is_delimiter(*str, quote, delimiter))
 			str++;
 		if (*str)
 			count++;
-		while (*str && (!is_delimiter(*str, quote) || quote))
+		while (*str && (!is_delimiter(*str, quote, delimiter) || quote))
 		{
 			if ((*str == '\'' || *str == '\"') && quote == 0)
 				quote = *str;
@@ -41,7 +41,7 @@ static int	count_words(const char *str)
 	return (count);
 }
 
-char	*extract_word(char **str)
+char	*extract_word(char **str, char delimiter)
 {
 	char	*start;
 	char	quote;
@@ -49,10 +49,10 @@ char	*extract_word(char **str)
 
 	quote = 0;
 	length = 0;
-	while (**str && is_delimiter(**str, quote))
+	while (**str && is_delimiter(**str, quote, delimiter))
 		(*str)++;
 	start = *str;
-	while (**str && (!is_delimiter(**str, quote) || quote))
+	while (**str && (!is_delimiter(**str, quote, delimiter) || quote))
 	{
 		if ((**str == '\'' || **str == '\"') && quote == 0)
 			quote = **str;
@@ -64,7 +64,7 @@ char	*extract_word(char **str)
 	return (ft_strndup(start, length));
 }
 
-char	**ft_split_space(char *s)
+char	**ft_split_quote(char *s, char delimiter)
 {
 	int		words;
 	int		i;
@@ -73,7 +73,7 @@ char	**ft_split_space(char *s)
 
 	if (!s)
 		return (NULL);
-	words = count_words(s);
+	words = count_words(s, delimiter);
 	result = (char **)malloc(sizeof(char *) * (words + 1));
 	if (!result)
 		return (NULL);
@@ -81,7 +81,7 @@ char	**ft_split_space(char *s)
 	i = 0;
 	while (i < words)
 	{
-		result[i] = extract_word(&str);
+		result[i] = extract_word(&str, delimiter);
 		i++;
 	}
 	result[words] = NULL;
