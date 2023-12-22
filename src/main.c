@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 01:07:10 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 01:28:00 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -361,22 +361,25 @@ char	*expand_env_vars(char *str)
 	return (buffer);
 }
 
-char	*expand_env_variables(char *arg, int expand)
+char *expand_env_variables(char *arg, int expand)
 {
-	char	*result;
+    char *result;
+    int in_single_quote = 0;
 
-	if (arg == NULL)
-		return (NULL);
-	if (expand)
-	{
-		if (ft_strcmp(arg, "$?") == 0)
-			result = ft_itoa(g_exit_code);
-		else
-			result = expand_env_vars(arg);
-		free(arg);
-		return (result);
-	}
-	return (arg);
+    if (arg == NULL)
+        return (NULL);
+    if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
+        in_single_quote = 1;
+    if (expand && !in_single_quote)
+    {
+        if (ft_strcmp(arg, "$?") == 0)
+            result = ft_itoa(g_exit_code);
+        else
+            result = expand_env_vars(arg);
+        free(arg);
+        return (result);
+    }
+    return (arg);
 }
 
 int	process_quotes(char *cmd_line)
