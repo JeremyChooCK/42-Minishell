@@ -146,14 +146,20 @@ int	checkforpipe(char *s)
 {
 	int	i;
 	int	num;
+	int	in_single_quote;
+	int	in_double_quote;
 
 	num = 0;
 	i = 0;
+	in_single_quote = 0;
+	in_double_quote = 0;
 	while (s[i])
 	{
-		if (s[i] == '|' && s[i + 1] == '|')
-			break ;
-		if (s[i] == '|' && s[i + 1] != '|')
+		if (s[i] == '\'' && (i == 0 || s[i - 1] != '\\'))
+			in_single_quote = !in_single_quote;
+		else if (s[i] == '\"' && (i == 0 || s[i - 1] != '\\'))
+			in_double_quote = !in_double_quote;
+		else if (s[i] == '|' && !in_single_quote && !in_double_quote)
 			num++;
 		i++;
 	}
