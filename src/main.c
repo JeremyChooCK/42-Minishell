@@ -72,35 +72,40 @@ void	free_history(t_history *history)
 	}
 }
 
-void ft_free_list(t_list *list)
+void	check_if_list_is_null(t_list *list)
 {
-    t_env_list **env_list;
-    t_env_list *env_current;
-    t_env_list *env_temp;
-
-    env_list = get_adress_env();
-    env_current = *env_list;
-    while (env_current != NULL) {
-        env_temp = env_current;
-        env_current = env_current->next;
-        free(env_temp->env_var.key);
-        free(env_temp->env_var.value);
-        free(env_temp);
-    }
-    *env_list = NULL;
-    if (list)
-    {
-        if (list->prompt)
-            free(list->prompt);
-        if (list->path)
-            free(list->path);
-        ft_freesplit(list->commandsarr);
-        ft_freesplit(list->execcmds);
-        free_history(list->history);
-        free(list);
-    }
+	if (list)
+	{
+		if (list->prompt)
+			free(list->prompt);
+		if (list->path)
+			free(list->path);
+		ft_freesplit(list->commandsarr);
+		ft_freesplit(list->execcmds);
+		free_history(list->history);
+		free(list);
+	}
 }
 
+void	ft_free_list(t_list *list)
+{
+	t_env_list	**env_list;
+	t_env_list	*env_current;
+	t_env_list	*env_temp;
+
+	env_list = get_adress_env();
+	env_current = *env_list;
+	while (env_current != NULL)
+	{
+		env_temp = env_current;
+		env_current = env_current->next;
+		free(env_temp->env_var.key);
+		free(env_temp->env_var.value);
+		free(env_temp);
+	}
+	*env_list = NULL;
+	check_if_list_is_null(list);
+}
 
 char	*join_paths_and_check_access(char **splitpath, t_list *data)
 {
@@ -898,7 +903,8 @@ void	reassign_and_handle_heredoc(t_list *data, int index)
 
 void	open_output_file(t_list *data, int index)
 {
-	data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
+	data->inputfd = open(data->execcmds[index + 1],
+			O_RDWR | O_CREAT | O_TRUNC, 0644);
 	if (data->inputfd == -1)
 	{
 		perror(data->execcmds[index + 1]);
@@ -1026,6 +1032,15 @@ void	reassign(t_list *data, int flag, int index)
 		reassign_and_handle_append(data, index);
 }
 
+void	check_if_redirection_is_last_arg(char *s)
+{
+	if (s == NULL)
+	{
+		perror("syntax error near unexpected token `newline'");
+		exit(1);
+	}
+}
+
 void	inputredirection(t_list *data)
 {
 	int	i;
@@ -1035,21 +1050,13 @@ void	inputredirection(t_list *data)
 	{
 		if (ft_strcmp(data->execcmds[i], "<") == 0)
 		{
-			if (data->execcmds[i + 1] == NULL)
-			{
-				perror("syntax error near unexpected token `newline'");
-				exit(1);
-			}
+			check_if_redirection_is_last_arg(data->execcmds[i + 1]);
 			reassign(data, 0, i);
 			i = -1;
 		}
 		else if (ft_strcmp(data->execcmds[i], "<<") == 0)
 		{
-			if (data->execcmds[i + 1] == NULL)
-			{
-				perror("syntax error near unexpected token `newline'");
-				exit(1);
-			}
+			check_if_redirection_is_last_arg(data->execcmds[i + 1]);
 			reassign(data, 1, i);
 			i = -1;
 		}
@@ -1066,21 +1073,13 @@ void	outputredirection(t_list *data)
 	{
 		if (ft_strcmp(data->execcmds[i], ">") == 0)
 		{
-			if (data->execcmds[i + 1] == NULL)
-			{
-				perror("syntax error near unexpected token `newline'");
-				exit(1);
-			}
+			check_if_redirection_is_last_arg(data->execcmds[i + 1]);
 			reassign(data, 2, i);
 			i = -1;
 		}
 		else if (ft_strcmp(data->execcmds[i], ">>") == 0)
 		{
-			if (data->execcmds[i + 1] == NULL)
-			{
-				perror("syntax error near unexpected token `newline'");
-				exit(1);
-			}
+			check_if_redirection_is_last_arg(data->execcmds[i + 1]);
 			reassign(data, 3, i);
 			i = -1;
 		}
@@ -1673,50 +1672,66 @@ void	add_to_env_list(char *key, char *value, t_env_list **env_list)
 		add_new_env_var(key, value, env_list);
 }
 
-void ft_export(char *arg)
+void	ft_export(char *arg)
 {
-    t_env_list **env_list;
-    char *key;
-    char *value;
+	t_env_list	**env_list;
+	char		*key;
+	char		*value;
 
-    env_list = get_adress_env();
-    if (!parse_export_argument(arg, &key, &value)) {
-        g_exit_code = 1;
-        return;
-    }
-    add_to_env_list(key, value, env_list);
-    g_exit_code = 0;
+	env_list = get_adress_env();
+	if (!parse_export_argument(arg, &key, &value))
+	{
+		g_exit_code = 1;
+		return ;
+	}
+	add_to_env_list(key, value, env_list);
+	g_exit_code = 0;
 }
 
-void ft_unset(char **args)
+void	free_current(t_env_list *current)
 {
-    t_env_list **env_list;
-    t_env_list *current, *prev;
-    int i;
+	free(current->env_var.key);
+	free(current->env_var.value);
+	free(current);
+}
 
-    env_list = get_adress_env();
-    if (!args || !*args || !env_list || !*env_list)
-        return;
-    for (i = 0; args[i] != NULL; i++)
+void	check_env_list_and_iterate(t_env_list	**env_list,
+			t_env_list	*current, t_env_list	*prev)
+{
+	if (prev == NULL)
+		*env_list = current->next;
+	else
+		prev->next = current->next;
+	free_current(current);
+}
+
+void	ft_unset(char **args)
+{
+	t_env_list	**env_list;
+	t_env_list	*current;
+	t_env_list	*prev;
+	int			i;
+
+	env_list = get_adress_env();
+	if (!args || !*args || !env_list || !*env_list)
+		return ;
+	i = 0;
+	while (args[i] != NULL)
 	{
-        prev = NULL;
-        current = *env_list;
-        while (current != NULL) {
-            if (ft_strcmp(current->env_var.key, args[i]) == 0) {
-                if (prev == NULL)
-                    *env_list = current->next;
-                else
-                    prev->next = current->next;
-
-                free(current->env_var.key);
-                free(current->env_var.value);
-                free(current);
-                break;
-            }
-            prev = current;
-            current = current->next;
-        }
-    }
+		prev = NULL;
+		current = *env_list;
+		while (current != NULL)
+		{
+			if (ft_strcmp(current->env_var.key, args[i]) == 0)
+			{
+				check_env_list_and_iterate(env_list, current, prev);
+				break ;
+			}
+			prev = current;
+			current = current->next;
+		}
+		i++;
+	}
 }
 
 void	ft_env(void)
@@ -2062,7 +2077,6 @@ void	add_env_node(char *env_var, t_env_list **env_list)
 			current = current->next;
 		current->next = new_node;
 	}
-
 }
 
 void	ft_init_t_env(char **envp)
