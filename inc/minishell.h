@@ -84,10 +84,9 @@ char	*reassign_prompt(const char *prompt);
 int		ft_echo(char **args);
 int		checkdir(char **args);
 int		ft_pwd(void);
-void	ft_export(char *arg, t_env_list **env_list);
-void	ft_unset(char **args, t_env_list **env_list);
+void	ft_unset(char **args);
 void	ft_env(t_env_list *env_vars);
 void	ft_exit(t_list *data);
-void	ft_export(char *arg, t_env_list **env_list);
+void	ft_export(char *arg);
 
 #endif

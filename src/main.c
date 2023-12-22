@@ -43,25 +43,19 @@ void	signal_cmd_pipe(int sig)
 	}
 }
 
+t_env_list	**get_adress_env(void)
+{
+	static t_env_list	*new = NULL;
+
+	return (&new);
+}
+
 void	free_env_var(t_env_var *env_var)
 {
 	if (env_var)
 	{
 		free(env_var->key);
 		free(env_var->value);
-	}
-}
-
-void	free_env_list(t_env_list *env_list)
-{
-	t_env_list	*tmp;
-
-	while (env_list)
-	{
-		tmp = env_list;
-		env_list = env_list->next;
-		free_env_var(&(tmp->env_var));
-		free(tmp);
 	}
 }
 
@@ -78,21 +72,35 @@ void	free_history(t_history *history)
 	}
 }
 
-void	ft_free_list(t_list *list)
+void ft_free_list(t_list *list)
 {
-	if (list)
-	{
-		if (list->prompt)
-			free(list->prompt);
-		if (list->path)
-			free(list->path);
-		ft_freesplit(list->commandsarr);
-		ft_freesplit(list->execcmds);
-		free_history(list->history);
-		free_env_list(list->env_vars);
-		free(list);
-	}
+    t_env_list **env_list;
+    t_env_list *env_current;
+    t_env_list *env_temp;
+
+    env_list = get_adress_env();
+    env_current = *env_list;
+    while (env_current != NULL) {
+        env_temp = env_current;
+        env_current = env_current->next;
+        free(env_temp->env_var.key);
+        free(env_temp->env_var.value);
+        free(env_temp);
+    }
+    *env_list = NULL;
+    if (list)
+    {
+        if (list->prompt)
+            free(list->prompt);
+        if (list->path)
+            free(list->path);
+        ft_freesplit(list->commandsarr);
+        ft_freesplit(list->execcmds);
+        free_history(list->history);
+        free(list);
+    }
 }
+
 
 char	*join_paths_and_check_access(char **splitpath, t_list *data)
 {
@@ -125,12 +133,30 @@ char	*handle_special_cases_and_cleanup(char **splitpath, t_list *data)
 	return (NULL);
 }
 
+char	*ft_getenv(const char *name)
+{
+	t_env_list	**env_list;
+	t_env_list	*current;
+
+	env_list = get_adress_env();
+	if (!env_list || !*env_list || !name)
+		return (NULL);
+	current = *env_list;
+	while (current)
+	{
+		if (ft_strcmp(current->env_var.key, name) == 0)
+			return (current->env_var.value);
+		current = current->next;
+	}
+	return (NULL);
+}
+
 char	*ft_getpath(t_list *data)
 {
 	char	**splitpath;
 	char	*joinedpath;
 
-	splitpath = ft_split(getenv("PATH"), ':');
+	splitpath = ft_split(ft_getenv("PATH"), ':');
 	if (!splitpath)
 		return (NULL);
 	joinedpath = join_paths_and_check_access(splitpath, data);
@@ -221,7 +247,7 @@ char	*process_env_var(char **p, char *result, char *temp)
 	while (ft_isalnum((unsigned char)*end) || *end == '_')
 		end++;
 	ft_strncpy(var_name, *p + 1, ft_min(end - *p - 1, NAME_SIZE - 1));
-	var_value = getenv(var_name);
+	var_value = ft_getenv(var_name);
 	if (var_value)
 	{
 		len = ft_strlen(var_value);
@@ -255,7 +281,7 @@ size_t	calculate_expansion_size(char *s)
 				s++;
 			var_len = s - start;
 			var_name = ft_strndup(start, var_len);
-			total_size += ft_strlen(getenv(var_name));
+			total_size += ft_strlen(ft_getenv(var_name));
 			free(var_name);
 		}
 		else
@@ -292,8 +318,8 @@ void	handle_variable(char **src, char **dest, char *start, size_t var_len)
 	char	*var_value;
 
 	var_name = ft_strndup(start, var_len);
-	if (getenv(var_name))
-		var_value = ft_strdup(getenv(var_name));
+	if (ft_getenv(var_name))
+		var_value = ft_strdup(ft_getenv(var_name));
 	else
 		var_value = ft_strdup("");
 	ft_strcpy(*dest, var_value);
@@ -443,7 +469,7 @@ char	*find_command_in_path(char *cmd)
 	char	*token;
 	char	*full_path;
 
-	path = getenv("PATH");
+	path = ft_getenv("PATH");
 	path_copy = ft_strdup(path);
 	token = ft_strtok(path_copy, ':');
 	while (token != NULL)
@@ -1131,7 +1157,7 @@ void	execute_buildin2(t_list *data)
 {
 	if (ft_strcmp(data->commandsarr[0], "unset") == 0)
 	{
-		ft_unset(data->commandsarr + 1, &(data->env_vars));
+		ft_unset(data->commandsarr + 1);
 		exit(1);
 	}
 	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
@@ -1171,7 +1197,7 @@ void	execute_buildin(t_list *data)
 	}
 	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
 	{
-		ft_export(data->commandsarr[1], &(data->env_vars));
+		ft_export(data->commandsarr[1]);
 		exit(1);
 	}
 	else
@@ -1302,7 +1328,7 @@ char	*parse_env_var(const char *input)
 
 	if (input[0] == '$')
 	{
-		env_value = getenv(input + 1);
+		env_value = ft_getenv(input + 1);
 		if (env_value != NULL)
 			return (strdup(env_value));
 		else
@@ -1326,7 +1352,7 @@ char	*resolve_path(char *path)
 {
 	if (path == NULL || ft_strcmp(path, "~") == 0)
 	{
-		path = getenv("HOME");
+		path = ft_getenv("HOME");
 		if (path == NULL)
 		{
 			ft_putstr_fd("cd: HOME not set\n", 2);
@@ -1335,7 +1361,7 @@ char	*resolve_path(char *path)
 	}
 	else if (ft_strcmp(path, "-") == 0)
 	{
-		path = getenv("OLDPWD");
+		path = ft_getenv("OLDPWD");
 		if (path == NULL)
 		{
 			ft_putstr_fd("cd: OLDPWD not set\n", 2);
@@ -1644,53 +1670,50 @@ void	add_to_env_list(char *key, char *value, t_env_list **env_list)
 		add_new_env_var(key, value, env_list);
 }
 
-void	ft_export(char *arg, t_env_list **env_list)
+void ft_export(char *arg)
 {
-	char	*key;
-	char	*value;
+    t_env_list **env_list;
+    char *key;
+    char *value;
 
-	if (!parse_export_argument(arg, &key, &value))
-	{
-		g_exit_code = 1;
-		return ;
-	}
-	add_to_env_list(key, value, env_list);
-	g_exit_code = 0;
+    env_list = get_adress_env();
+    if (!parse_export_argument(arg, &key, &value)) {
+        g_exit_code = 1;
+        return;
+    }
+    add_to_env_list(key, value, env_list);
+    g_exit_code = 0;
 }
 
-void	remove_env_var(char *arg, t_env_list **env_list, t_env_list *prev)
+void ft_unset(char **args)
 {
-	t_env_list	*current;
+    t_env_list **env_list;
+    t_env_list *current, *prev;
+    int i;
 
-	current = *env_list;
-	while (current != NULL)
+    env_list = get_adress_env();
+    if (!args || !*args || !env_list || !*env_list)
+        return;
+    for (i = 0; args[i] != NULL; i++)
 	{
-		if (ft_strcmp(current->env_var.key, arg) == 0)
-		{
-			if (prev == NULL)
-				*env_list = current->next;
-			else
-				prev->next = current->next;
-			free(current->env_var.key);
-			free(current->env_var.value);
-			free(current);
-			break ;
-		}
-		prev = current;
-		current = current->next;
-	}
-}
+        prev = NULL;
+        current = *env_list;
+        while (current != NULL) {
+            if (ft_strcmp(current->env_var.key, args[i]) == 0) {
+                if (prev == NULL)
+                    *env_list = current->next;
+                else
+                    prev->next = current->next;
 
-void	ft_unset(char **args, t_env_list **env_list)
-{
-	int	i;
-
-	if (!args || !env_list || !*env_list)
-		return ;
-	i = 0;
-	while (args[i] != NULL)
-		remove_env_var(args[i++], env_list, NULL);
-	g_exit_code = 0;
+                free(current->env_var.key);
+                free(current->env_var.value);
+                free(current);
+                break;
+            }
+            prev = current;
+            current = current->next;
+        }
+    }
 }
 
 void	ft_env(t_env_list *env_vars)
@@ -1949,9 +1972,9 @@ void	execute_specific_command(t_list *data, char **envp)
 	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 		g_exit_code = ft_pwd();
 	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
-		ft_export(data->commandsarr[1], &(data->env_vars));
+		ft_export(data->commandsarr[1]);
 	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
-		ft_unset(data->commandsarr + 1, &(data->env_vars));
+		ft_unset(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
 		ft_env(data->env_vars);
 	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
@@ -2032,12 +2055,15 @@ void	add_env_node(char *env_var, t_env_list **env_list)
 			current = current->next;
 		current->next = new_node;
 	}
+
 }
 
-void	ft_init_t_env(char **envp, t_env_list **env_list)
+void	ft_init_t_env(char **envp)
 {
-	int	i;
+	int			i;
+	t_env_list	**env_list;
 
+	env_list = get_adress_env();
 	if (env_list != NULL)
 		*env_list = NULL;
 	if (envp == NULL || env_list == NULL)
@@ -2062,7 +2088,7 @@ int	main(int argc, char **argv, char **envp)
 		return (1);
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
-	ft_init_t_env(envp, &(data->env_vars));
+	ft_init_t_env(envp);
 	signal(SIGINT, signal_cmd);
 	signal(SIGQUIT, SIG_IGN);
 	ft_display_prompt(data, envp);
