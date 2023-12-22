@@ -366,25 +366,26 @@ char	*expand_env_vars(char *str)
 	return (buffer);
 }
 
-char *expand_env_variables(char *arg, int expand)
+char	*expand_env_variables(char *arg, int expand)
 {
-    char *result;
-    int in_single_quote = 0;
+	char	*result;
+	int		in_single_quote;
 
-    if (arg == NULL)
-        return (NULL);
-    if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
-        in_single_quote = 1;
-    if (expand && !in_single_quote)
-    {
-        if (ft_strcmp(arg, "$?") == 0)
-            result = ft_itoa(g_exit_code);
-        else
-            result = expand_env_vars(arg);
-        free(arg);
-        return (result);
-    }
-    return (arg);
+	in_single_quote = 0;
+	if (arg == NULL)
+		return (NULL);
+	if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
+		in_single_quote = 1;
+	if (expand && !in_single_quote)
+	{
+		if (ft_strcmp(arg, "$?") == 0)
+			result = ft_itoa(g_exit_code);
+		else
+			result = expand_env_vars(arg);
+		free(arg);
+		return (result);
+	}
+	return (arg);
 }
 
 int	process_quotes(char *cmd_line)
@@ -1741,7 +1742,7 @@ void	ft_env(void)
 
 	env_list = get_adress_env();
 	if (!env_list || !*env_list)
-		return;
+		return ;
 	current = *env_list;
 	while (current != NULL)
 	{
