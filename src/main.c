@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/21 23:33:44 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/22 19:14:51 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1954,12 +1954,27 @@ void	execute_specific_command(t_list *data, char **envp)
 		handle_external_commands(data, envp);
 }
 
+void	expand_command_arguments(char **args)
+{
+	int	i;
+
+	i = 0;
+	while (args[i] != NULL)
+	{
+		args[i] = expand_env_variables(args[i], 1);
+		i++;
+	}
+}
+
 void	execute_command(t_list *data, char **envp)
 {
 	if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 		ft_exit(data);
 	else
+	{
+		expand_command_arguments(data->commandsarr);
 		execute_specific_command(data, envp);
+	}
 }
 
 void	handle_command(t_list *data, char **envp)
