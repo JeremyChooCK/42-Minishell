@@ -745,7 +745,7 @@ void	open_infile_and_redirect_input(t_list *data, int index)
 	data->inputfd = open(s, O_RDONLY);
 	if (data->inputfd == -1)
 	{
-		perror("Error opening file");
+		perror(s);
 		g_exit_code = 1;
 		exit(EXIT_FAILURE);
 	}
@@ -850,14 +850,14 @@ void	open_output_file(t_list *data, int index)
 	data->inputfd = open(data->execcmds[index + 1], O_RDWR | O_CREAT, 0644);
 	if (data->inputfd == -1)
 	{
-		perror("Error opening file");
+		perror(data->execcmds[index + 1]);
 		exit(EXIT_FAILURE);
 	}
 	dup2(data->inputfd, 1);
 	close(data->inputfd);
 	if (data->inputfd == -1)
 	{
-		perror("Error opening file");
+		perror(data->execcmds[index + 1]);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -984,11 +984,21 @@ void	inputredirection(t_list *data)
 	{
 		if (ft_strcmp(data->execcmds[i], "<") == 0)
 		{
+			if (data->execcmds[i + 1] == NULL)
+			{
+				perror("syntax error near unexpected token `newline'");
+				exit(1);
+			}
 			reassign(data, 0, i);
 			i = -1;
 		}
 		else if (ft_strcmp(data->execcmds[i], "<<") == 0)
 		{
+			if (data->execcmds[i + 1] == NULL)
+			{
+				perror("syntax error near unexpected token `newline'");
+				exit(1);
+			}
 			reassign(data, 1, i);
 			i = -1;
 		}
@@ -1005,11 +1015,21 @@ void	outputredirection(t_list *data)
 	{
 		if (ft_strcmp(data->execcmds[i], ">") == 0)
 		{
+			if (data->execcmds[i + 1] == NULL)
+			{
+				perror("syntax error near unexpected token `newline'");
+				exit(1);
+			}
 			reassign(data, 2, i);
 			i = -1;
 		}
 		else if (ft_strcmp(data->execcmds[i], ">>") == 0)
 		{
+			if (data->execcmds[i + 1] == NULL)
+			{
+				perror("syntax error near unexpected token `newline'");
+				exit(1);
+			}
 			reassign(data, 3, i);
 			i = -1;
 		}
@@ -1309,8 +1329,6 @@ char	*validate_and_resolve_path(char **args)
 	char	*path;
 
 	path = validate_arguments(args);
-	if (path == NULL)
-		return (NULL);
 	return (resolve_path(path));
 }
 
@@ -1887,7 +1905,8 @@ void	handle_external_commands(t_list *data, char **envp)
 	}
 	else
 	{
-		ft_putstr_fd(" command not found\n", 2);
+		ft_putstr_fd(cmd, 2);
+		ft_putstr_fd(": command not found\n", 2);
 		g_exit_code = 127;
 	}
 	ft_freesplit(data->commandsarr);
