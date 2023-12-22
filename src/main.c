@@ -508,6 +508,21 @@ void	process_commands(
 	}
 }
 
+int	check_if_pipe_is_valid(char **strarr, int numofpipes)
+{
+	int	i;
+
+	i = 0;
+	while (strarr[i])
+		i++;
+	if (i != numofpipes + 1)
+	{
+		ft_putstr_fd("syntax error near unexpected token `|'\n", 2);
+		return (0);
+	}
+	return (1);
+}
+
 int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
@@ -516,7 +531,8 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 	temp = reassign_prompt(data->prompt);
 	strarr = ft_split(temp, '|');
 	free(temp);
-	process_commands(data, envp, strarr, numofpipes);
+	if (check_if_pipe_is_valid(strarr, numofpipes))
+		process_commands(data, envp, strarr, numofpipes);
 	ft_freesplit(strarr);
 	data->i = 0;
 	dup2(data->stdin, STDIN_FILENO);
