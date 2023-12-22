@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/22 20:19:47 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 01:07:10 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1162,7 +1162,7 @@ void	execute_buildin2(t_list *data)
 	}
 	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
 	{
-		ft_env(data->env_vars);
+		ft_env();
 		exit(1);
 	}
 	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
@@ -1716,11 +1716,15 @@ void ft_unset(char **args)
     }
 }
 
-void	ft_env(t_env_list *env_vars)
+void	ft_env(void)
 {
+	t_env_list	**env_list;
 	t_env_list	*current;
 
-	current = env_vars;
+	env_list = get_adress_env();
+	if (!env_list || !*env_list)
+		return;
+	current = *env_list;
 	while (current != NULL)
 	{
 		printf("%s=%s\n", current->env_var.key, current->env_var.value);
@@ -1976,7 +1980,7 @@ void	execute_specific_command(t_list *data, char **envp)
 	else if (ft_strcmp(data->commandsarr[0], "unset") == 0)
 		ft_unset(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "env") == 0)
-		ft_env(data->env_vars);
+		ft_env();
 	else if (ft_strcmp(data->commandsarr[0], "history") == 0)
 		ft_display_history(data);
 	else
