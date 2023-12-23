@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 17:15:39 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 17:30:49 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -50,7 +50,7 @@ t_env_list	**ft_get_adress_env(void)
 	return (&new);
 }
 
-void	free_env_var(t_env_var *env_var)
+void	ft_free_env_var(t_env_var *env_var)
 {
 	if (env_var)
 	{
@@ -59,7 +59,7 @@ void	free_env_var(t_env_var *env_var)
 	}
 }
 
-void	free_history(t_history *history)
+void	ft_free_history(t_history *history)
 {
 	t_history	*tmp;
 
@@ -82,7 +82,7 @@ void	check_if_list_is_null(t_list *list)
 			free(list->path);
 		ft_freesplit(list->commandsarr);
 		ft_freesplit(list->execcmds);
-		free_history(list->history);
+		ft_free_history(list->history);
 		free(list);
 	}
 }
@@ -1701,7 +1701,7 @@ void	ft_export(char *arg)
 	g_exit_code = 0;
 }
 
-void	free_current(t_env_list *current)
+void	ft_free_current(t_env_list *current)
 {
 	free(current->env_var.key);
 	free(current->env_var.value);
@@ -1715,7 +1715,7 @@ void	check_env_list_and_iterate(t_env_list	**env_list,
 		*env_list = current->next;
 	else
 		prev->next = current->next;
-	free_current(current);
+	ft_free_current(current);
 }
 
 void	ft_unset(char **args)
@@ -1826,6 +1826,7 @@ char	*validate_exit_argument(t_list *data)
 
 int	process_exit_args(t_list *data)
 {
+	int		i;
 	char	*validated_arg;
 
 	validated_arg = validate_exit_argument(data);
@@ -1843,7 +1844,11 @@ int	process_exit_args(t_list *data)
 		return (2);
 	}
 	if (validated_arg)
-		return (ft_atoi(validated_arg));
+	{
+		i = ft_atoi(validated_arg);
+		free(validated_arg);
+		return (i);
+	}
 	return (0);
 }
 
