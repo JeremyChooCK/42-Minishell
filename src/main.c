@@ -1390,6 +1390,7 @@ int	change_directory(char *path)
 	}
 	if (chdir(path) != 0)
 	{
+		free(path);
 		perror("cd");
 		free(path);
 		return (1);
