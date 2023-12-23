@@ -1858,7 +1858,7 @@ void	ft_exit(t_list *data)
 	if (exit_status == -1)
 	{
 		ft_free_list(data);
-		exit(1);
+		return ;
 	}
 	else if (exit_status == -2)
 	{
@@ -2034,37 +2034,56 @@ void	expand_command_arguments(char **args)
 	}
 }
 
+void	handle_redirections(t_list *data, int i)
+{
+	int	flags;
+	int	fd;
+
+	data->original_stdout = dup(STDOUT_FILENO);
+	flags = (O_WRONLY | O_CREAT | O_APPEND);
+	if (ft_strcmp(data->commandsarr[i], ">") == 0)
+		flags = (O_WRONLY | O_CREAT | O_TRUNC);
+	fd = open(data->commandsarr[i + 1], flags, 0644);
+	if (fd == -1)
+	{
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	dup2(fd, STDOUT_FILENO);
+	close(fd);
+	data->redirection_active = 1;
+}
+
+void	update_commands_array(t_list *data, int i)
+{
+	int	j;
+
+	j = i;
+	while (data->commandsarr[j + 2] != NULL)
+	{
+		data->commandsarr[j] = data->commandsarr[j + 2];
+		j++;
+	}
+	data->commandsarr[j] = NULL;
+}
+
 void	setup_redirections(t_list *data)
 {
 	int	i;
-	int	fd;
 
 	i = 0;
-    data->redirection_active = 0;
-    while (data->commandsarr[i] != NULL)
+	data->redirection_active = 0;
+	while (data->commandsarr[i] != NULL)
 	{
-        if (strcmp(data->commandsarr[i], ">") == 0 || strcmp(data->commandsarr[i], ">>") == 0)
+		if (ft_strcmp(data->commandsarr[i], ">") == 0
+			|| ft_strcmp(data->commandsarr[i], ">>") == 0)
 		{
-            data->original_stdout = dup(STDOUT_FILENO);
-            int flags = (strcmp(data->commandsarr[i], ">") == 0) ? (O_WRONLY | O_CREAT | O_TRUNC) : (O_WRONLY | O_CREAT | O_APPEND);
-            fd = open(data->commandsarr[i + 1], flags, 0644);
-            if (fd == -1) {
-                perror("open");
-                exit(EXIT_FAILURE);
-            }
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
-            data->redirection_active = 1;
-            int j = i;
-            while (data->commandsarr[j + 2] != NULL) {
-                data->commandsarr[j] = data->commandsarr[j + 2];
-                j++;
-            }
-            data->commandsarr[j] = NULL;
-            break;
-        }
-        i++;
-    }
+			handle_redirections(data, i);
+			update_commands_array(data, i);
+			break ;
+		}
+		i++;
+	}
 }
 
 void	restore_stdout(t_list *data)
