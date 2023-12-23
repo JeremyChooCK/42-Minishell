@@ -2034,42 +2034,37 @@ void	expand_command_arguments(char **args)
 	}
 }
 
-void	handle_redirections(t_list *data)
+void	handle_redirections(t_list *data, int i)
 {
 	int	flags;
 	int	fd;
 
-	data->redirection_active = 0;
-	if (ft_strcmp(data->commandsarr[0], ">") == 0
-		|| ft_strcmp(data->commandsarr[0], ">>") == 0)
+	data->original_stdout = dup(STDOUT_FILENO);
+	flags = (O_WRONLY | O_CREAT | O_APPEND);
+	if (ft_strcmp(data->commandsarr[i], ">") == 0)
+		flags = (O_WRONLY | O_CREAT | O_TRUNC);
+	fd = open(data->commandsarr[i + 1], flags, 0644);
+	if (fd == -1)
 	{
-		data->original_stdout = dup(STDOUT_FILENO);
-		flags = (O_WRONLY | O_CREAT | O_APPEND);
-		if (ft_strcmp(data->commandsarr[0], ">") == 0)
-			flags = (O_WRONLY | O_CREAT | O_TRUNC);
-		fd = open(data->commandsarr[1], flags, 0644);
-		if (fd == -1)
-		{
-			perror("open");
-			exit(EXIT_FAILURE);
-		}
-		dup2(fd, STDOUT_FILENO);
-		close(fd);
-		data->redirection_active = 1;
+		perror("open");
+		exit(EXIT_FAILURE);
 	}
+	dup2(fd, STDOUT_FILENO);
+	close(fd);
+	data->redirection_active = 1;
 }
 
-void	update_commands_array(t_list *data)
+void	update_commands_array(t_list *data, int i)
 {
-	int	i;
+	int	j;
 
-	i = 0;
-	while (data->commandsarr[i] != NULL && data->commandsarr[i + 2] != NULL)
+	j = i;
+	while (data->commandsarr[j + 2] != NULL)
 	{
-		data->commandsarr[i] = data->commandsarr[i + 2];
-		i++;
+		data->commandsarr[j] = data->commandsarr[j + 2];
+		j++;
 	}
-	data->commandsarr[i] = NULL;
+	data->commandsarr[j] = NULL;
 }
 
 void	setup_redirections(t_list *data)
@@ -2077,13 +2072,14 @@ void	setup_redirections(t_list *data)
 	int	i;
 
 	i = 0;
+	data->redirection_active = 0;
 	while (data->commandsarr[i] != NULL)
 	{
 		if (ft_strcmp(data->commandsarr[i], ">") == 0
 			|| ft_strcmp(data->commandsarr[i], ">>") == 0)
 		{
-			handle_redirections(data);
-			update_commands_array(data);
+			handle_redirections(data, i);
+			update_commands_array(data, i);
 			break ;
 		}
 		i++;
