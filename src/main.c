@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 14:57:53 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 15:14:18 by jgyy             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1467,37 +1467,42 @@ void	parse_and_print_echo(char *input)
 	printf("%s", output);
 }
 
-void echo_out(char **str, int pos)
+void	process_split_temp(char **split_temp, int expand)
 {
-    char    *temp;
-    char    **split_temp;
-    char    *joined_cmd;
-    int     expand;
-    int     length;
+	int	i;
 
-    expand = 1;
-    temp = ft_strdup(str[pos]);
-    if (temp == NULL)
-        exit(1);
-    length = ft_strlen(temp);
-    if (length >= 2 && temp[0] == '\'' && temp[length - 1] == '\'')
-        expand = 0;
-    split_temp = ft_split(temp, ' ');
-    if (split_temp == NULL)
-        exit(1);
-    for (int i = 0; split_temp[i] != NULL; i++) {
-        split_temp[i] = expand_env_variables(split_temp[i], expand);
-    }
-    joined_cmd = ft_strjoin_space(split_temp);
-    if (joined_cmd)
-    {
-        parse_and_print_echo(joined_cmd);
-        free(joined_cmd);
-    }
-    for (int i = 0; split_temp[i] != NULL; i++)
-        free(split_temp[i]);
-    free(split_temp);
-    free(temp);
+	i = -1;
+	while (split_temp[++i] != NULL)
+		split_temp[i] = expand_env_variables(split_temp[i], expand);
+}
+
+void	echo_out(char **str, int pos)
+{
+	char	*temp;
+	char	**split_temp;
+	char	*joined_cmd;
+	int		expand;
+	int		length;
+
+	expand = 1;
+	temp = ft_strdup(str[pos]);
+	if (temp == NULL)
+		exit(1);
+	length = ft_strlen(temp);
+	if (length >= 2 && temp[0] == '\'' && temp[length - 1] == '\'')
+		expand = 0;
+	split_temp = ft_split(temp, ' ');
+	if (split_temp == NULL)
+		exit(1);
+	process_split_temp(split_temp, expand);
+	joined_cmd = ft_strjoin_space(split_temp);
+	if (joined_cmd)
+	{
+		parse_and_print_echo(joined_cmd);
+		free(joined_cmd);
+	}
+	ft_freesplit(split_temp);
+	free(temp);
 }
 
 int	process_flags(char **args, int *n_flag)
