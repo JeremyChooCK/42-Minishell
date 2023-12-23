@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 01:07:31 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 10:06:27 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef MINISHELL_H
@@ -61,6 +61,8 @@ typedef struct s_list
 	int			stdout;
 	int			i;
 	int			inputfd;
+	int			original_stdout;
+	int			redirection_active;
 	t_history	*history;
 	t_env_list	*env_vars;
 }	t_list;
