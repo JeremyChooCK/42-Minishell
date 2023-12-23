@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/22 19:34:42 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 12:25:58 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef LIBFT_H
@@ -38,6 +38,7 @@ char	*ft_strstr(const char *str, const char *to_find);
 size_t	ft_strlen(const char *str);
 size_t	ft_strnlen(const char *s, size_t maxlen);
 char	*ft_strjoin( char const *s1, char const *s2);
+char	*ft_strjoin_space(char **arr);
 int		ft_strcmp(const char *s1, const char *s2);
 int		ft_strncmp(const char *s1, const char *s2, size_t n);
 char	*ft_strdup(const char *s1);
