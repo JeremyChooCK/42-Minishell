@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 16:54:50 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 17:15:39 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -43,7 +43,7 @@ void	ft_signal_cmd_pipe(int sig)
 	}
 }
 
-t_env_list	**get_adress_env(void)
+t_env_list	**ft_get_adress_env(void)
 {
 	static t_env_list	*new = NULL;
 
@@ -93,7 +93,7 @@ void	ft_free_list(t_list *list)
 	t_env_list	*env_current;
 	t_env_list	*env_temp;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	env_current = *env_list;
 	while (env_current != NULL)
 	{
@@ -143,7 +143,7 @@ char	*ft_getenv(const char *name)
 	t_env_list	**env_list;
 	t_env_list	*current;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	if (!env_list || !*env_list || !name)
 		return (NULL);
 	current = *env_list;
@@ -1187,7 +1187,7 @@ void	execute_buildin(t_list *data)
 	}
 	else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
-		g_exit_code = checkdir(data->commandsarr + 1);
+		g_exit_code = ft_cd(data->commandsarr + 1);
 		exit(1);
 	}
 	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
@@ -1266,7 +1266,7 @@ void	executecommands(t_list *data, char **envp, int type)
 		remove_quotes_from_args(data->execcmds);
 	if (ft_strcmp(data->commandsarr[0], "cd") == 0)
 	{
-		g_exit_code = checkdir(data->commandsarr + 1);
+		g_exit_code = ft_cd(data->commandsarr + 1);
 		return ;
 	}
 	manage_process_and_signals(data, type, envp);
@@ -1385,17 +1385,20 @@ int	change_directory(char *path)
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
 		perror("cd: getcwd failed");
+		free(path);
 		return (1);
 	}
 	if (chdir(path) != 0)
 	{
 		perror("cd");
+		free(path);
 		return (1);
 	}
+	free(path);
 	return (0);
 }
 
-int	checkdir(char **args)
+int	ft_cd(char **args)
 {
 	char	*resolved_path;
 
@@ -1688,7 +1691,7 @@ void	ft_export(char *arg)
 	char		*key;
 	char		*value;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	if (!parse_export_argument(arg, &key, &value))
 	{
 		g_exit_code = 1;
@@ -1722,7 +1725,7 @@ void	ft_unset(char **args)
 	t_env_list	*prev;
 	int			i;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	if (!args || !*args || !env_list || !*env_list)
 		return ;
 	i = 0;
@@ -1749,7 +1752,7 @@ void	ft_env(void)
 	t_env_list	**env_list;
 	t_env_list	*current;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	if (!env_list || !*env_list)
 		return ;
 	current = *env_list;
@@ -1998,7 +2001,7 @@ void	execute_specific_command(t_list *data, char **envp)
 	if (ft_strcmp(data->commandsarr[0], "echo") == 0)
 		g_exit_code = ft_echo(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "cd") == 0)
-		g_exit_code = checkdir(data->commandsarr + 1);
+		g_exit_code = ft_cd(data->commandsarr + 1);
 	else if (ft_strcmp(data->commandsarr[0], "pwd") == 0)
 		g_exit_code = ft_pwd();
 	else if (ft_strcmp(data->commandsarr[0], "export") == 0)
@@ -2160,7 +2163,7 @@ void	ft_init_t_env(char **envp)
 	int			i;
 	t_env_list	**env_list;
 
-	env_list = get_adress_env();
+	env_list = ft_get_adress_env();
 	if (env_list != NULL)
 		*env_list = NULL;
 	if (envp == NULL || env_list == NULL)
