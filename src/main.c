@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 15:14:18 by jgyy             ###   ########.fr       */
+/*   Updated: 2023/12/23 16:30:26 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -1848,12 +1848,9 @@ void	ft_exit(t_list *data)
 	int	exit_status;
 
 	exit_status = process_exit_args(data);
-	if (exit_status == -1)
-	{
-		ft_free_list(data);
+	if (exit_status == 1)
 		return ;
-	}
-	else if (exit_status == -2)
+	else if (exit_status == 2)
 	{
 		ft_free_list(data);
 		exit(2);
@@ -2117,7 +2114,8 @@ void	handle_command(t_list *data, char **envp)
 	}
 	else
 		g_exit_code = 0;
-	free(data->path);
+	if (data->path)
+		free(data->path);
 	if (data->prompt != NULL)
 		free(data->prompt);
 }
