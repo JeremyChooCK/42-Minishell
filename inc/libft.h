@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:34:32 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 12:25:58 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 14:34:27 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #ifndef LIBFT_H
@@ -32,6 +32,7 @@ char	**ft_split_quote(char *s, char delimiter);
 char	*ft_strcat(char *dest, const char *src);
 char	*ft_strchr(const char *s, int c);
 char	*ft_strcpy(char *dest, const char *src);
+size_t	ft_strlcpy(char *dest, const char *src, size_t size);
 char	*ft_strncpy(char *dest, const char *src, size_t n);
 char	*ft_strnew(size_t size);
 char	*ft_strstr(const char *str, const char *to_find);
@@ -44,5 +45,6 @@ int		ft_strncmp(const char *s1, const char *s2, size_t n);
 char	*ft_strdup(const char *s1);
 char	*ft_strndup(const char *s, size_t n);
 char	*ft_strtok(char *str, char sepa);
+char	*ft_substr(const char *s, unsigned int start, size_t len);
 
 #endif

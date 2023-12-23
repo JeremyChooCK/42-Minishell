@@ -32,10 +32,12 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_min.c \
 	ft_strcat.c \
 	ft_strcpy.c \
+	ft_strlcpy.c \
 	ft_strlen.c \
 	ft_strncpy.c \
 	ft_strstr.c \
 	ft_strtok.c \
+	ft_substr.c \
 
 LIBFT_SRC := $(addprefix libft/,$(LIBFT_SRC))
 LIBFT_OBJS := $(LIBFT_SRC:libft/%.c=$(BUILDDIR)/%.o)
