@@ -26,6 +26,7 @@ LIBFT_SRC = ft_isalnum.c \
 	ft_split_quote.c \
 	ft_strcmp.c \
 	ft_strjoin.c \
+	ft_strjoin_space.c \
 	ft_strncmp.c \
 	ft_strnlen.c \
 	ft_min.c \
