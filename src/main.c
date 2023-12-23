@@ -1174,10 +1174,7 @@ void	execute_buildin2(t_list *data)
 		exit(1);
 	}
 	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
-	{
 		ft_exit(data);
-		exit(1);
-	}
 }
 
 // data->execcmds[0] for echo fix the test cases, do not touch that
@@ -1341,16 +1338,6 @@ char	*parse_env_var(const char *input)
 		return (ft_strdup(input));
 }
 
-char	*validate_arguments(char **args)
-{
-	if (args && args[0] && args[1])
-	{
-		ft_putstr_fd("cd: too many arguments\n", 2);
-		return (NULL);
-	}
-	return (args[0]);
-}
-
 char	*resolve_path(char *path)
 {
 	if (path == NULL || ft_strcmp(path, "~") == 0)
@@ -1379,7 +1366,13 @@ char	*validate_and_resolve_path(char **args)
 {
 	char	*path;
 
-	path = validate_arguments(args);
+	if (args && args[0] && args[1])
+	{
+		ft_putstr_fd("cd: too many arguments\n", 2);
+		path = NULL;
+	}
+	else
+		path = args[0];
 	return (resolve_path(path));
 }
 
