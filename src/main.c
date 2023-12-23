@@ -6,7 +6,7 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 01:28:00 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 10:16:45 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -581,7 +581,7 @@ int	execute_piped_commands(t_list *data, char **envp, int numofpipes)
 	return (1);
 }
 
-int	execute_commands(t_list *data, char **envp, int numofpipes)
+int	execute_multiple_commands(t_list *data, char **envp, int numofpipes)
 {
 	char	*temp;
 	int		result;
@@ -611,7 +611,7 @@ int	getcmd(t_list *data, char **envp)
 	result = process_command_parts(data, cmd_parts, &numofpipes);
 	if (result < 0)
 		return (-1);
-	return (execute_commands(data, envp, numofpipes));
+	return (execute_multiple_commands(data, envp, numofpipes));
 }
 
 void	remove_quotes_from_arg(char *arg)
@@ -2018,15 +2018,63 @@ void	expand_command_arguments(char **args)
 	}
 }
 
+void	setup_redirections(t_list *data)
+{
+	int	i;
+	int	fd;
+
+	i = 0;
+    data->redirection_active = 0;
+    while (data->commandsarr[i] != NULL)
+	{
+        if (strcmp(data->commandsarr[i], ">") == 0 || strcmp(data->commandsarr[i], ">>") == 0)
+		{
+            data->original_stdout = dup(STDOUT_FILENO);
+            int flags = (strcmp(data->commandsarr[i], ">") == 0) ? (O_WRONLY | O_CREAT | O_TRUNC) : (O_WRONLY | O_CREAT | O_APPEND);
+            fd = open(data->commandsarr[i + 1], flags, 0644);
+            if (fd == -1) {
+                perror("open");
+                exit(EXIT_FAILURE);
+            }
+            dup2(fd, STDOUT_FILENO);
+            close(fd);
+            data->redirection_active = 1;
+            int j = i;
+            while (data->commandsarr[j + 2] != NULL) {
+                data->commandsarr[j] = data->commandsarr[j + 2];
+                j++;
+            }
+            data->commandsarr[j] = NULL;
+            break;
+        }
+        i++;
+    }
+}
+
+void	restore_stdout(t_list *data)
+{
+	if (data->redirection_active)
+	{
+		dup2(data->original_stdout, STDOUT_FILENO);
+		close(data->original_stdout);
+		data->redirection_active = 0;
+	}
+}
+
+// This function may break, revert it quickly if so
 void	execute_command(t_list *data, char **envp)
 {
-	if (ft_strcmp(data->commandsarr[0], "exit") == 0)
+	setup_redirections(data);
+	if (strcmp(data->commandsarr[0], "echo") == 0)
+		ft_echo(data->commandsarr + 1);
+	else if (ft_strcmp(data->commandsarr[0], "exit") == 0)
 		ft_exit(data);
 	else
 	{
 		expand_command_arguments(data->commandsarr);
 		execute_specific_command(data, envp);
 	}
+	restore_stdout(data);
 }
 
 void	handle_command(t_list *data, char **envp)
