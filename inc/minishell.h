@@ -67,6 +67,8 @@ typedef struct s_list
 	t_env_list	*env_vars;
 }	t_list;
 
+extern int	g_exit_code;
+
 void signal_cmd(int sig);
 void signal_cmd_pipe(int sig);
 t_env_list **get_adress_env(void);
@@ -188,5 +190,9 @@ void ft_display_prompt(t_list *data, char **envp);
 void add_env_node(char *env_var, t_env_list **env_list);
 void ft_init_t_env(char **envp);
 int	ft_cd(char **args);
+void	ft_signal_cmd(int sig);
+void	ft_signal_cmd_pipe(int sig);
+t_env_list	**ft_get_adress_env(void);
+void	ft_free_current(t_env_list *current);
 
 #endif
