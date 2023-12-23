@@ -6,14 +6,14 @@
 /*   By: jegoh <jegoh@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/21 21:45:15 by jegoh             #+#    #+#             */
-/*   Updated: 2023/12/23 16:30:26 by jegoh            ###   ########.fr       */
+/*   Updated: 2023/12/23 16:54:50 by jegoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
 
 int	g_exit_code;
 
-void	signal_cmd(int sig)
+void	ft_signal_cmd(int sig)
 {
 	g_exit_code += sig;
 	if (sig == 2)
@@ -31,7 +31,7 @@ void	signal_cmd(int sig)
 	}
 }
 
-void	signal_cmd_pipe(int sig)
+void	ft_signal_cmd_pipe(int sig)
 {
 	g_exit_code += sig;
 	if (sig == 2)
@@ -1137,7 +1137,7 @@ void	handle_parent_process(t_list *data, int type, int id)
 {
 	int	status;
 
-	signal(SIGINT, signal_cmd_pipe);
+	signal(SIGINT, ft_signal_cmd_pipe);
 	signal(SIGQUIT, SIG_IGN);
 	close(data->pipefd[1]);
 	if (type == 1)
@@ -1152,7 +1152,7 @@ void	handle_parent_process(t_list *data, int type, int id)
 			g_exit_code = WEXITSTATUS(status);
 	}
 	wait(NULL);
-	signal(SIGINT, signal_cmd);
+	signal(SIGINT, ft_signal_cmd);
 	signal(SIGQUIT, SIG_IGN);
 }
 
@@ -1831,7 +1831,8 @@ int	process_exit_args(t_list *data)
 	if (validated_arg && strcmp(validated_arg, "-1") == 0)
 	{
 		free(validated_arg);
-		return (1);
+		g_exit_code = 1;
+		return (1111);
 	}
 	if (validated_arg && strcmp(validated_arg, "-2") == 0)
 	{
@@ -1848,7 +1849,7 @@ void	ft_exit(t_list *data)
 	int	exit_status;
 
 	exit_status = process_exit_args(data);
-	if (exit_status == 1)
+	if (exit_status == 1111)
 		return ;
 	else if (exit_status == 2)
 	{
@@ -2127,7 +2128,7 @@ void	ft_display_prompt(t_list *data, char **envp)
 	while (1)
 	{
 		data->prompt = readline("minishell$> ");
-		signal(SIGINT, signal_cmd);
+		signal(SIGINT, ft_signal_cmd);
 		signal(SIGQUIT, SIG_IGN);
 		if (!data->prompt)
 			return ;
@@ -2185,7 +2186,7 @@ int	main(int argc, char **argv, char **envp)
 	data->stdin = dup(STDIN_FILENO);
 	data->stdout = dup(STDOUT_FILENO);
 	ft_init_t_env(envp);
-	signal(SIGINT, signal_cmd);
+	signal(SIGINT, ft_signal_cmd);
 	signal(SIGQUIT, SIG_IGN);
 	ft_display_prompt(data, envp);
 	if (data)
