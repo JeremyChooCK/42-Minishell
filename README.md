@@ -43,6 +43,7 @@ Project Workflow
 6.  **Command Execution:** Utilizes `fork` to create a child process for command execution, with the parent process waiting for its completion.
 
 Below is a flow chart of the program and how it works
+
 <img src="img/minishell flowchart.png"></a>
 
 ## Tester
