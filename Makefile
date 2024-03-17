@@ -42,7 +42,40 @@ LIBFT_SRC = ft_isalnum.c \
 LIBFT_SRC := $(addprefix libft/,$(LIBFT_SRC))
 LIBFT_OBJS := $(LIBFT_SRC:libft/%.c=$(BUILDDIR)/%.o)
 
-SRC = main.c
+SRC = append.c \
+	env_variables.c \
+	env_variables_utils_3.c \
+	exit.c \
+	general_utils_1.c \
+	general_utils_4.c \
+	inputredirection.c \
+	parsing.c \
+	parsing_utils_3.c \
+	quotes_utils_1.c \
+	redirection_utils_2.c \
+	cd.c \
+	env_variables_utils_1.c \
+	execute_command.c \
+	export.c \
+	general_utils_2.c \
+	heredoc.c \
+	main.c \
+	outputredirection.c \
+	parsing_utils_1.c \
+	pathing.c \
+	quotes_utils_2.c \
+	signals.c \
+	echo.c \
+	env_variables_utils_2.c \
+	execute_command_utils.c \
+	free_variables.c \
+	general_utils_3.c \
+	history.c \
+	parsing_utils_2.c \
+	quotes.c \
+	redirection_utils_1.c \
+	unset.c
+	
 SRC := $(addprefix src/,$(SRC))
 SRC_OBJS := $(SRC:src/%.c=$(BUILDDIR)/%.o)
 
