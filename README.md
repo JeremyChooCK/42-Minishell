@@ -1,14 +1,14 @@
-Minishell Project
+Bash Clone Project
 =================
 
 Overview
 --------
 
-The Minishell project is an ambitious endeavor that replicates the functionalities of a Unix shell. It is designed to provide a deep understanding of system programming, focusing on the mechanics of Unix system calls, shell behaviors, and process management. The project aims to emulate a standard Unix shell with a range of features and capabilities.
+The Bash clone project is an ambitious endeavor that replicates the functionalities of a Unix shell. It is designed to provide a deep understanding of system programming, focusing on the mechanics of Unix system calls, shell behaviors, and process management. The project aims to emulate a standard Unix shell with a range of features and capabilities.
 Features
 --------
 
-Minishell includes several key features:
+bash clone includes several key features:
 
 -   **Command Prompt:** Displays a user input prompt.
 -   **Command History:** Maintains a record of executed commands.
@@ -44,7 +44,7 @@ Project Workflow
 
 Below is a flow chart of the program and how it works
 
-<img src="img/minishell flowchart.png"></a>
+<img src="img/bash clone flowchart.png"></a>
 
 ## Tester
 
@@ -62,4 +62,4 @@ execve, dup2, pipe, perror, getenv, ft_setenv
 Conclusion
 ----------
 
-The Minishell project is a comprehensive exercise in understanding and implementing core functionalities of a Unix shell. It serves as a practical platform for learning system programming, process management, and the nuanced operations of a Unix-like environment. This project is an invaluable asset for anyone looking to deepen their understanding of Unix systems and shell programming.
+The bash clone project is a comprehensive exercise in understanding and implementing core functionalities of a Unix shell. It serves as a practical platform for learning system programming, process management, and the nuanced operations of a Unix-like environment. This project is an invaluable asset for anyone looking to deepen their understanding of Unix systems and shell programming.
